@@ -10,7 +10,7 @@ GHCR runs at ~400 KB/s from here, so selection prefers smaller images (the
 largest quartile is excluded) and pulls run in the background.
 
   python scripts/swe_images.py select TASKS_DIR [--n-per-bucket 10] [--seed 0]  -> configs/swe_tasks.txt
-  python scripts/swe_images.py pull TASKS_DIR [-j 3]                             -> pulls + tags listed tasks
+  python scripts/swe_images.py pull TASKS_DIR [-j 8]                             -> fetches + tags listed tasks
 """
 
 from __future__ import annotations
@@ -108,26 +108,17 @@ def listed_instances() -> list[str]:
     return [line.split("#")[0].strip() for line in TASK_LIST.read_text().splitlines() if line.split("#")[0].strip()]
 
 
-def pull_one(task: dict, retries: int = 5) -> str:
-    base, src = task["base"], EPOCH.format(instance=task["instance"])
-    if subprocess.run(["docker", "image", "inspect", base], capture_output=True).returncode == 0:
-        return f"{task['instance']}: exists"
-    for attempt in range(retries):
-        if subprocess.run(["docker", "pull", "-q", src], capture_output=True).returncode == 0:
-            subprocess.run(["docker", "tag", src, base], check=True)
-            return f"{task['instance']}: pulled and tagged {base}"
-    return f"{task['instance']}: FAILED after {retries} attempts"
-
-
 def pull(tasks_dir: Path, jobs: int) -> None:
+    """Fetch on the host with scripts/fetch_image.py (resumable, parallel); `docker pull` in the VM is ~8x slower."""
     wanted = set(listed_instances())
     tasks = [t for t in load_tasks(tasks_dir) if t["instance"] in wanted]
-    failed = 0
-    with ThreadPoolExecutor(jobs) as ex:
-        for msg in ex.map(pull_one, tasks):
-            print(msg, flush=True)
-            failed += "FAILED" in msg
-    sys.exit(1 if failed else 0)
+    missing = [t for t in tasks if subprocess.run(["docker", "image", "inspect", t["base"]], capture_output=True).returncode]
+    print(f"{len(tasks) - len(missing)} of {len(tasks)} base images already present", flush=True)
+    if not missing:
+        return
+    specs = [f"{EPOCH.format(instance=t['instance'])}={t['base']}" for t in missing]
+    rc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fetch_image.py"), *specs, "-j", str(jobs)]).returncode
+    sys.exit(rc)
 
 
 def main() -> None:
@@ -136,7 +127,7 @@ def main() -> None:
     ap.add_argument("tasks_dir", type=Path, help="exported swe-bench-verified task directory")
     ap.add_argument("--n-per-bucket", type=int, default=10)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("-j", type=int, default=3)
+    ap.add_argument("-j", type=int, default=8)
     args = ap.parse_args()
     if args.cmd == "select":
         select(args.tasks_dir, args.n_per_bucket, args.seed)
