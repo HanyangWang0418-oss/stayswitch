@@ -1,0 +1,20 @@
+# Papers are third-party PDFs; keep them local.
+*.pdf
+0_target/
+1_agentic_step_level/
+2_benchmarks_infra/
+3_classic_routing/
+4_close_competitors/
+# Evaluated codebase, has its own upstream repo.
+reef/
+.claude/
+.DS_Store
+
+# stayswitch: secrets, environments, experiment outputs
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+stayswitch/runs/
+stayswitch/jobs/
+stayswitch/data/

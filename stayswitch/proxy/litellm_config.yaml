@@ -1,0 +1,68 @@
+# LiteLLM proxy config. Agents request model "stayswitch"; the hook rewrites it to a pool alias below.
+# Start with: scripts/start_proxy.sh configs/<router>.toml
+model_list:
+  # Virtual entry so the requested name resolves; the hook always replaces it.
+  - model_name: stayswitch
+    litellm_params:
+      model: openai/unrouted
+      api_key: sk-mock
+      mock_response: "stayswitch hook did not route this call"
+
+  # ---- Pool: Qwen3.5 397B-A17B / 9B on Tinker's OpenAI-compatible API. Same family and chat template,
+  # prefix cache reported as prompt_tokens_details.cached_tokens (0.2x price), no write premium, 64K context.
+  # Cloudflare rejects some default User-Agents, so send an explicit one. ----
+  - model_name: strong
+    litellm_params:
+      model: openai/Qwen/Qwen3.5-397B-A17B
+      api_base: https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1
+      api_key: os.environ/TINKER_API_KEY
+      extra_headers:
+        User-Agent: stayswitch/0.1
+  - model_name: weak
+    litellm_params:
+      model: openai/Qwen/Qwen3.5-9B
+      api_base: https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1
+      api_key: os.environ/TINKER_API_KEY
+      extra_headers:
+        User-Agent: stayswitch/0.1
+
+  # ---- Alt pool: DeepSeek V4 pro/flash via a private Anthropic-compatible gateway (GATEWAY_* in .env). Same family,
+  # automatic prefix caching reported as cache_read_input_tokens, no cache-write premium. ----
+  - model_name: ds-strong
+    litellm_params:
+      model: anthropic/deepseek-v4-pro
+      api_base: os.environ/GATEWAY_BASE
+      api_key: os.environ/GATEWAY_TOKEN
+      extra_headers:
+        Authorization: os.environ/GATEWAY_AUTH_HEADER
+        limit-price: os.environ/GATEWAY_LIMIT_PRICE
+  - model_name: ds-weak
+    litellm_params:
+      model: anthropic/deepseek-v4-flash
+      api_base: os.environ/GATEWAY_BASE
+      api_key: os.environ/GATEWAY_TOKEN
+      extra_headers:
+        Authorization: os.environ/GATEWAY_AUTH_HEADER
+        limit-price: os.environ/GATEWAY_LIMIT_PRICE
+
+  # ---- Offline test pool: never calls a provider ----
+  - model_name: mock-strong
+    litellm_params:
+      model: openai/mock-strong
+      api_key: sk-mock
+      mock_response: '{"analysis": "mock strong", "plan": "", "commands": [], "task_complete": true}'
+  - model_name: mock-weak
+    litellm_params:
+      model: openai/mock-weak
+      api_key: sk-mock
+      mock_response: '{"analysis": "mock weak", "plan": "", "commands": [], "task_complete": true}'
+
+litellm_settings:
+  callbacks: stayswitch_hook.proxy_handler_instance
+  drop_params: true
+  # Tinker drops connections now and then (59 of 1115 weak-baseline calls); retry before the agent sees an error.
+  num_retries: 4
+  request_timeout: 600
+
+router_settings:
+  retry_after: 2

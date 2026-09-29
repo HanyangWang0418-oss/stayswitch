@@ -1,0 +1,10 @@
+# Live connectivity check on the cheap model.
+[run]
+id = "live_fixed_weak"
+[policy]
+kind = "fixed"
+model = "weak"
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/live_fixed_weak/calls.jsonl"

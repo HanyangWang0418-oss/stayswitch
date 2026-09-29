@@ -1,0 +1,14 @@
+# Offline smoke test: fork the mock base trace at call 2, mock-weak for 2 calls, then back.
+[run]
+id = "mock_fork"
+[policy]
+kind = "fork"
+source_log = "../runs/mock_fixed/calls.jsonl"
+fork_step = 2
+option_model = "mock-weak"
+base_model = "mock-strong"
+horizon = 2
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/mock_fork/calls.jsonl"

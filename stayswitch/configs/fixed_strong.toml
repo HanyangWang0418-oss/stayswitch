@@ -1,0 +1,13 @@
+# Base policy pi0: always the strong model. Its call log is the source for forks.
+[run]
+id = "fixed_strong"
+
+[policy]
+kind = "fixed"
+model = "strong"
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/fixed_strong/calls.jsonl"

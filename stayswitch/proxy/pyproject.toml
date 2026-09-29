@@ -1,0 +1,11 @@
+[project]
+name = "stayswitch-proxy"
+version = "0.0.1"
+requires-python = ">=3.12,<3.14"
+dependencies = ["litellm[proxy]", "stayswitch"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+stayswitch = { path = "..", editable = true }

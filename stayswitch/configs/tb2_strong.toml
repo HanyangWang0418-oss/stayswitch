@@ -1,0 +1,13 @@
+# Terminal-Bench 2 baseline: always the strong model. Also the source trace for later forks.
+[run]
+id = "tb2_strong"
+
+[policy]
+kind = "fixed"
+model = "strong"
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/tb2_strong/calls.jsonl"

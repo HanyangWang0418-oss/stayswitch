@@ -1,0 +1,18 @@
+# Fork: replay the pi0 trace for 10 calls, run the weak model for 8 calls, then back to strong.
+[run]
+id = "fork_s10_weak_h8"
+
+[policy]
+kind = "fork"
+source_log = "../runs/fixed_strong/calls.jsonl"
+fork_step = 10
+option_model = "weak"
+base_model = "strong"
+horizon = 8            # 0 = keep the option model to the end (permanent handoff)
+check_divergence = true
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/fork_s10_weak_h8/calls.jsonl"

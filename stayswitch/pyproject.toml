@@ -1,0 +1,24 @@
+[project]
+name = "stayswitch"
+version = "0.0.1"
+description = "Cache-aware step-level model routing for LLM agents"
+requires-python = ">=3.12,<3.14"
+dependencies = []
+
+[dependency-groups]
+# Harbor drives the agents; it lives here. The LiteLLM proxy runs in proxy/ (its rich pin clashes with Harbor's).
+eval = ["harbor==0.23.0"]
+dev = ["pytest>=8"]
+tinker = [
+    "tinker>=0.30.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stayswitch"]
+
+[tool.uv]
+default-groups = ["eval", "dev"]

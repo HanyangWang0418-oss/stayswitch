@@ -1,0 +1,38 @@
+# USD per 1M tokens. Tinker list prices (tinker-docs.thinkingmachines.ai/tinker/models, 2026-09-28):
+# prefill = input, cached prefill = 0.2x (80% off), sample = output; no cache-write premium.
+[models.strong]   # Qwen/Qwen3.5-397B-A17B
+input = 3.00
+output = 7.50
+cache_read = 0.60
+cache_write = 3.00
+
+[models.weak]     # Qwen/Qwen3.5-9B
+input = 0.66
+output = 1.995
+cache_read = 0.132
+cache_write = 0.66
+
+# DeepSeek V4 via a private gateway. PROVISIONAL: weak = DeepSeek V3.2-era list price, strong = 4x.
+[models.ds-strong]
+input = 1.12
+output = 1.68
+cache_write_mult = 1.0
+cache_read_mult = 0.1
+
+[models.ds-weak]
+input = 0.28
+output = 0.42
+cache_write_mult = 1.0
+cache_read_mult = 0.1
+
+[models.mock-strong]
+input = 3.0
+output = 15.0
+cache_write_mult = 1.25
+cache_read_mult = 0.1
+
+[models.mock-weak]
+input = 1.0
+output = 5.0
+cache_write_mult = 1.25
+cache_read_mult = 0.1

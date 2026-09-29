@@ -1,0 +1,14 @@
+# Harbor end-to-end fork check: replay the weak base run for 1 call, then strong to the end.
+[run]
+id = "hello_fork"
+[policy]
+kind = "fork"
+source_log = "../runs/live_fixed_weak/calls.jsonl"
+fork_step = 1
+option_model = "strong"
+base_model = "weak"
+horizon = 0
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/hello_fork/calls.jsonl"

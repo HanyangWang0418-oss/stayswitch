@@ -1,0 +1,13 @@
+# Terminal-Bench 2 baseline: always the weak model.
+[run]
+id = "tb2_weak"
+
+[policy]
+kind = "fixed"
+model = "weak"
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/tb2_weak/calls.jsonl"

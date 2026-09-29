@@ -1,0 +1,10 @@
+# Offline smoke test: base trace on the mock pool (no provider calls).
+[run]
+id = "mock_fixed"
+[policy]
+kind = "fixed"
+model = "mock-strong"
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/mock_fixed/calls.jsonl"

@@ -1,0 +1,12 @@
+# Offline check of budget stops: the first call exhausts the per-trajectory cap.
+[run]
+id = "mock_budget"
+[policy]
+kind = "fixed"
+model = "mock-strong"
+[budget]
+per_session_usd = 0.0001
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/mock_budget/calls.jsonl"

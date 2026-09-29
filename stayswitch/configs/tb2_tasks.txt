@@ -1,0 +1,9 @@
+# Terminal-Bench 2 tasks for the pilot baselines (the first 8 Harbor picked with -l 8). One name per line.
+break-filter-js-from-html
+build-pov-ray
+circuit-fibsqrt
+distribution-search
+make-mips-interpreter
+overfull-hbox
+protein-assembly
+video-processing

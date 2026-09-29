@@ -1,0 +1,12 @@
+# Live check that switching works and cache reads reset on a switch.
+[run]
+id = "live_random"
+[policy]
+kind = "random_segment"
+models = ["strong", "weak"]
+p_switch = 1.0
+min_stay = 2
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/live_random/calls.jsonl"

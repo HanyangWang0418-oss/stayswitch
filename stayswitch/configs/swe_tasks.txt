@@ -1,0 +1,22 @@
+# SWE-bench Verified pilot: 10 per difficulty bucket, seed 0, <= 3 per repo,
+# arm64 image <= 1.01 GB (largest quartile of sampled candidates excluded).
+# instance  difficulty  image_GB
+django__django-13406  # <15 min fix  0.96
+pytest-dev__pytest-5262  # <15 min fix  0.72
+django__django-14792  # <15 min fix  0.99
+psf__requests-5414  # <15 min fix  0.71
+django__django-11119  # <15 min fix  0.96
+sphinx-doc__sphinx-7462  # <15 min fix  0.82
+sphinx-doc__sphinx-9230  # <15 min fix  0.82
+sphinx-doc__sphinx-9698  # <15 min fix  0.82
+sympy__sympy-15345  # <15 min fix  0.90
+sympy__sympy-19495  # <15 min fix  0.90
+sympy__sympy-20428  # 15 min - 1 hour  0.90
+pylint-dev__pylint-7080  # 15 min - 1 hour  0.74
+astropy__astropy-14539  # 15 min - 1 hour  0.90
+psf__requests-2931  # 15 min - 1 hour  0.70
+pytest-dev__pytest-7571  # 15 min - 1 hour  0.72
+astropy__astropy-14182  # 15 min - 1 hour  0.90
+mwaskom__seaborn-3187  # 15 min - 1 hour  0.85
+astropy__astropy-13977  # 15 min - 1 hour  0.90
+pytest-dev__pytest-5631  # 15 min - 1 hour  0.72
