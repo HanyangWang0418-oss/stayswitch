@@ -10,7 +10,9 @@ v1 (``context.eoq_threshold``) assumed a small post-compaction size and a full c
 threshold too low. v2 differs in three ways:
   * L0 is the size the compactor actually produced for this trajectory (observed after each compaction), not a guess;
   * the cached head is excluded from the rewrite cost;
-  * g is a running average of the live context's growth per call within the current cycle.
+  * g is the mean growth per call over the current cycle (since the last compaction), which is what the cycle
+    model assumes. A recency-weighted average was tried first: it tracks the quiet calls, misses the occasional
+    large tool result, and under-estimated g by ~40% on Claude Code (seed 1), so it fired ~11K too early.
 Before a trajectory's first compaction there is nothing to observe, so L0 is estimated as head + (keep + 1) * g.
 """
 
@@ -37,16 +39,17 @@ def eoq_l_star(
 @dataclass
 class _Trajectory:
     l0: float | None = None  # prompt size right after the latest compaction
-    growth: float | None = None  # EMA of live-context growth per call within the current cycle
-    prev_out: int | None = None
+    growth: float | None = None  # mean growth per call over the current cycle
+    cycle_start: int | None = None  # outgoing size at the start of the current cycle
+    cycle_calls: int = 0
     compactions: int = 0
 
 
 class EOQTrigger:
     def __init__(self, price: Price, *, extra_steps: float, keep_recent: int, out_tokens: int = 900,
-                 min_gap: int = 4, ceiling: int = 52000, ema: float = 0.3) -> None:
+                 min_gap: int = 4, ceiling: int = 52000) -> None:
         self.price, self.extra_steps, self.keep_recent = price, extra_steps, keep_recent
-        self.out_tokens, self.min_gap, self.ceiling, self.ema = out_tokens, min_gap, ceiling, ema
+        self.out_tokens, self.min_gap, self.ceiling = out_tokens, min_gap, ceiling
         self._state: dict[str, _Trajectory] = {}
 
     def _get(self, key: str) -> _Trajectory:
@@ -66,10 +69,12 @@ class EOQTrigger:
         """Record the size of the request that was just sent (after any compaction)."""
         s = self._get(key)
         if compacted:
-            s.l0, s.prev_out, s.growth = float(est_out), est_out, None
+            s.l0, s.cycle_start, s.cycle_calls, s.growth = float(est_out), est_out, 0, None
             s.compactions += 1
             return
-        if s.prev_out is not None and est_out > s.prev_out:
-            d = float(est_out - s.prev_out)
-            s.growth = d if s.growth is None else (1 - self.ema) * s.growth + self.ema * d
-        s.prev_out = est_out
+        if s.cycle_start is None:
+            s.cycle_start = est_out
+            return
+        s.cycle_calls += 1
+        if est_out > s.cycle_start:
+            s.growth = (est_out - s.cycle_start) / s.cycle_calls
