@@ -1,5 +1,7 @@
 # StaySwitch
 
+**使用手册(中文):[docs/MANUAL.md](docs/MANUAL.md)** — setup, datasets and images, running experiments, config reference, outputs, forking, troubleshooting.
+
 Cache-aware step-level model routing for LLM agents. See `../proposal.md` for the research plan.
 
 ## Layout

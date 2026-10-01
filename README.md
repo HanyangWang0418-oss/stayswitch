@@ -5,3 +5,4 @@ treating prompt-cache state and switching cost as part of the decision.
 
 - [`proposal.md`](proposal.md) — research plan, related work map, and running notes (in Chinese)
 - [`stayswitch/`](stayswitch/) — LiteLLM-proxy router, replay-based forking, cache-aware accounting, Harbor/Terminal-Bench and SWE-bench tooling (see its README)
+- [`stayswitch/docs/MANUAL.md`](stayswitch/docs/MANUAL.md) — usage manual (in Chinese)
