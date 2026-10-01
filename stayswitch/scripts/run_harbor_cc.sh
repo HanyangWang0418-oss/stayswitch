@@ -9,7 +9,9 @@
 #   CC_BASE_URL      proxy URL as seen from the container (default http://host.docker.internal:$STAYSWITCH_PORT)
 #   CC_COMPACT_PCT   Claude Code's own auto-compact trigger, percent of its assumed 200K window
 #                    (default 25 = ~50K, under Tinker's 64K limit). Irrelevant when a compacting
-#                    proxy keeps the prompt small.
+#                    proxy keeps the prompt small. The variable Claude Code 2.1.286 reads is
+#                    CLAUDE_AUTOCOMPACT_PCT_OVERRIDE (checked in the binary); CLAUDE_CODE_AUTOCOMPACT_PCT_OVERRIDE
+#                    is ignored. DISABLE_AUTO_COMPACT=1 turns it off entirely.
 set -euo pipefail
 dataset="$1"; jobs="$2"; shift 2
 cd "$(dirname "$0")/.."
@@ -27,7 +29,8 @@ exec uv run harbor run \
   --ae "ANTHROPIC_BASE_URL=${CC_BASE_URL:-http://host.docker.internal:${STAYSWITCH_PORT:-4000}}" \
   --ae "ANTHROPIC_API_KEY=sk-stayswitch-local" \
   --ae "ANTHROPIC_DEFAULT_HAIKU_MODEL=stayswitch" \
-  --ae "CLAUDE_CODE_AUTOCOMPACT_PCT_OVERRIDE=${CC_COMPACT_PCT:-25}" \
+  --ae "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=${CC_COMPACT_PCT:-25}" \
+  ${DISABLE_AUTO_COMPACT:+--ae DISABLE_AUTO_COMPACT=1} \
   --ae "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1" \
   --jobs-dir "$jobs" \
   --verifier-timeout-multiplier "${VERIFIER_TIMEOUT_MULT:-5}" \
