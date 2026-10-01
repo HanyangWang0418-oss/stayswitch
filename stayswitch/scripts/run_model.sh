@@ -3,6 +3,7 @@
 # Usage: scripts/run_model.sh <dataset> <task_list> <config> [port=4001] [concurrency=2]
 #   e.g. scripts/run_model.sh swe-bench/swe-bench-verified configs/swe_tasks.txt configs/swe_strong.toml
 # The run id (config [run].id) names both runs/<id>/ (call log) and jobs/<id>/ (Harbor trials).
+# AGENT=cc runs Claude Code instead of terminus-2 (scripts/run_harbor_cc.sh).
 set -euo pipefail
 dataset="$1"; task_list="$2"; config="$3"; port="${4:-4001}"; conc="${5:-2}"
 cd "$(dirname "$0")/.."
@@ -19,7 +20,9 @@ trap "pkill -f 'litellm --config litellm_config.yaml --port $port' || true" EXIT
 for _ in $(seq 1 90); do curl -s "localhost:$port/health/liveliness" >/dev/null && break; sleep 1; done
 curl -s "localhost:$port/health/liveliness" >/dev/null || { echo "proxy did not come up; see runs/proxy_$run_id.log" >&2; exit 1; }
 
-STAYSWITCH_PORT="$port" OPENAI_API_KEY=sk-dummy scripts/run_harbor.sh "$dataset" "jobs/$run_id" "${include[@]}" -n "$conc" \
+harbor_script=scripts/run_harbor.sh
+[ "${AGENT:-terminus}" = cc ] && harbor_script=scripts/run_harbor_cc.sh   # AGENT=cc: Claude Code as the agent
+STAYSWITCH_PORT="$port" OPENAI_API_KEY=sk-dummy "$harbor_script" "$dataset" "jobs/$run_id" "${include[@]}" -n "$conc" \
   > "runs/harbor_$run_id.log" 2>&1 || echo "harbor exited non-zero (see runs/harbor_$run_id.log)"
 
 uv run python scripts/summarize_runs.py "$run_id"

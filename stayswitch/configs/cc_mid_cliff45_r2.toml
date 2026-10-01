@@ -1,0 +1,17 @@
+# Claude Code on the mid model (docs/CLIFF_ALIGNMENT.md). Compaction, if any, by the official CliffCompaction proxy via scripts/run_cliff.sh.
+[run]
+id = "cc_mid_cliff45_r2"
+
+[policy]
+kind = "fixed"
+model = "mid"
+
+[budget]
+per_session_usd = 3.0   # runaway loops end here; same rule for every policy
+total_usd = 300.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/cc_mid_cliff45_r2/calls.jsonl"

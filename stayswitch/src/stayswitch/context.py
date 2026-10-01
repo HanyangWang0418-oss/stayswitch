@@ -12,6 +12,7 @@ With ``keep`` turns kept at minimum, the number of turns sent ranges over
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 ELISION_NOTE = (
@@ -37,21 +38,69 @@ def est_tokens(messages: list[dict[str, Any]]) -> int:
 
 
 def _text(content: Any) -> str:
+    """All prompt text of a message's content, including Anthropic thinking, tool_use and tool_result blocks."""
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        return " ".join(p.get("text", "") for p in content if isinstance(p, dict))
+        return " ".join(_block_text(p) for p in content if isinstance(p, dict))
     return ""
 
 
+def _block_text(block: dict[str, Any]) -> str:
+    kind = block.get("type")
+    if kind == "tool_use":
+        return json.dumps(block.get("input") or {}) + str(block.get("name", ""))
+    if kind == "tool_result":
+        return _text(block.get("content"))
+    if kind == "thinking":
+        return str(block.get("thinking", ""))
+    return str(block.get("text", ""))
+
+
+def overhead_tokens(*parts: Any) -> int:
+    """Tokens of the fixed part of an Anthropic request (system prompt, tool definitions), which the
+    message list does not contain but the context window pays for."""
+    return int(sum(len(json.dumps(p, default=str)) for p in parts if p) / CHARS_PER_TOKEN)
+
+
+def _clip_text(text: str, max_chars: int) -> str:
+    half = max_chars // 2
+    return text[:half] + f"\n[... {len(text) - max_chars} characters omitted ...]\n" + text[-half:]
+
+
+def _clip_block(block: Any, max_chars: int) -> Any:
+    if not isinstance(block, dict):
+        return block
+    if block.get("type") == "tool_result":
+        inner = block.get("content")
+        if isinstance(inner, str) and len(inner) > max_chars:
+            return {**block, "content": _clip_text(inner, max_chars)}
+        if isinstance(inner, list):
+            return {**block, "content": [_clip_block(b, max_chars) for b in inner]}
+        return block
+    text = block.get("text")
+    if isinstance(text, str) and len(text) > max_chars:
+        return {**block, "text": _clip_text(text, max_chars)}
+    return block
+
+
 def _clip(message: dict[str, Any], max_chars: int) -> dict[str, Any]:
-    """Cut an over-long message to its head and tail. Depends only on the message, never on its
-    position, so a message is sent identically on every call and the cache prefix survives."""
+    """Cut an over-long message (or over-long text / tool_result block in it) to its head and tail.
+    Depends only on the message, never on its position, so a message is sent identically on every
+    call and the cache prefix survives."""
     content = message.get("content")
+    if isinstance(content, list):
+        clipped = [_clip_block(b, max_chars) for b in content]
+        return message if all(a is b for a, b in zip(clipped, content)) else {**message, "content": clipped}
     if not isinstance(content, str) or len(content) <= max_chars:
         return message
-    half = max_chars // 2
-    return {**message, "content": content[:half] + f"\n[... {len(content) - max_chars} characters omitted ...]\n" + content[-half:]}
+    return {**message, "content": _clip_text(content, max_chars)}
+
+
+def _note_target(head: list[dict[str, Any]]) -> int:
+    """Index of the head message that carries the elision note: the last user turn. Claude Code's head can end
+    with a role="system" note, and a note there would not be seen as part of the task."""
+    return next((i for i in range(len(head) - 1, -1, -1) if head[i].get("role") == "user"), len(head) - 1)
 
 
 class Compactor:
@@ -71,10 +120,14 @@ class Compactor:
         tail = [_clip(m, self.max_msg_chars) for m in rest[starts[cut] :]] if cut < len(starts) else []
         head = [_clip(m, self.max_msg_chars) for m in head]
         if cut and head:
-            head = [*head[:-1], _with_note(head[-1])]
+            i = _note_target(head)
+            head = [*head[:i], _with_note(head[i]), *head[i + 1 :]]
         return [*head, *tail]
 
-    def view(self, messages: list[dict[str, Any]], x: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    def view(
+        self, messages: list[dict[str, Any]], x: dict[str, Any], overhead: int = 0
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """``overhead``: tokens sent with every call outside ``messages`` (system prompt, tool schemas)."""
         first_assistant = next((i for i, m in enumerate(messages) if m.get("role") == "assistant"), len(messages))
         head, rest = messages[:first_assistant], messages[first_assistant:]
         starts = [i for i, m in enumerate(rest) if m.get("role") == "assistant"]
@@ -82,13 +135,13 @@ class Compactor:
         if cut > len(starts):  # the harness rewrote its own history (e.g. its summariser ran): start over
             cut = x["cut"] = 0
         sent = self._view(head, rest, starts, cut)
-        tokens = est_tokens(sent)
+        tokens = est_tokens(sent) + overhead
         prev = x.get("prev_tokens")
         if prev is not None and not x.get("just_compacted") and tokens > prev:
             g = tokens - prev
             x["growth"] = g if "growth" not in x else 0.7 * x["growth"] + 0.3 * g
         x["just_compacted"] = False
-        head_tokens = est_tokens(self._view(head, rest, starts, max(len(starts) - self.keep, 0)))
+        head_tokens = est_tokens(self._view(head, rest, starts, max(len(starts) - self.keep, 0))) + overhead
         # Leave room for at least ``min_gap`` steps of growth after a compaction: if the kept turns
         # alone exceed the threshold, compacting every call degrades into a cache-breaking sliding window.
         floor = head_tokens + self.min_gap * x.get("growth", tokens / max(len(starts), 1))
@@ -99,7 +152,7 @@ class Compactor:
             sent = self._view(head, rest, starts, cut)
             x["compactions"] = x.get("compactions", 0) + 1
             x["just_compacted"] = compacted = True
-            tokens = est_tokens(sent)
+            tokens = est_tokens(sent) + overhead
         x["prev_tokens"] = tokens
         return sent, {"est_tokens": tokens, "threshold": int(limit), "cut": cut, "compacted": compacted}
 
@@ -145,4 +198,5 @@ def evict(messages: list[dict[str, Any]], keep: int, chunk: int) -> tuple[list[d
     tail = rest[starts[dropped] :]
     if not head:
         return tail, dropped
-    return [*head[:-1], _with_note(head[-1]), *tail], dropped
+    i = _note_target(head)
+    return [*head[:i], _with_note(head[i]), *head[i + 1 :], *tail], dropped

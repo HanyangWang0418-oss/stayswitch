@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -38,6 +39,8 @@ def install(model: str, extra_steps: float, log_path: Path, ceiling: int, min_ga
     rule = eoq_threshold(price, extra_steps=extra_steps, ceiling=ceiling)
     original = cliff_engine.Engine.prepare
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    if os.environ.get("EOQ_VERSION", "1") == "2":  # measured L0 / growth, cached head excluded (stayswitch.eoq_trigger)
+        return install_v2(price, extra_steps, log_path, ceiling, min_gap, original)
 
     def prepare(self, body, dialect):
         msgs = body[dialect.messages_key]
@@ -56,6 +59,34 @@ def install(model: str, extra_steps: float, log_path: Path, ceiling: int, min_ga
             f.write(json.dumps({
                 "ts": time.time(), "turns": turns, "est_in": ctx.est_tokens_in, "est_out": ctx.est_tokens_out,
                 "growth": round(growth), "l0": round(l0), "threshold": int(threshold), "compacted": bool(ctx.compacted),
+            }) + "\n")
+        return ctx
+
+    cliff_engine.Engine.prepare = prepare
+
+
+def install_v2(price, extra_steps: float, log_path: Path, ceiling: int, min_gap: int, original) -> None:
+    from stayswitch.eoq_trigger import EOQTrigger
+
+    trigger = EOQTrigger(price, extra_steps=extra_steps, keep_recent=3, min_gap=min_gap, ceiling=ceiling)
+
+    def prepare(self, body, dialect):
+        msgs = body[dialect.messages_key]
+        roles = [m.get("role") for m in msgs]
+        first_assistant = roles.index("assistant") if "assistant" in roles else len(msgs)
+        turns = max(roles.count("assistant"), 1)
+        head = estimate_tokens({**body, dialect.messages_key: msgs[:first_assistant]})  # system + tools + task
+        mean_growth = max((estimate_tokens(body) - head) / turns, 50.0)
+        key = dialect.digest_message(msgs[0]) if msgs else ""  # the first message is fixed for a trajectory
+        trigger.keep_recent = self.cfg.keep_recent
+        threshold, info = trigger.threshold(key, head=head, mean_growth=mean_growth)
+        self.cfg.threshold_tokens = threshold  # prepare() is synchronous: no interleaving
+        ctx = original(self, body, dialect)
+        trigger.observe(key, est_out=ctx.est_tokens_out, compacted=bool(ctx.compacted))
+        with open(log_path, "a") as f:
+            f.write(json.dumps({
+                "ts": time.time(), "turns": turns, "est_in": ctx.est_tokens_in, "est_out": ctx.est_tokens_out,
+                "head": head, "threshold": threshold, "compacted": bool(ctx.compacted), **info,
             }) + "\n")
         return ctx
 

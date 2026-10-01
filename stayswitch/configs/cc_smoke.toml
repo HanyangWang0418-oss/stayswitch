@@ -1,0 +1,12 @@
+# Claude Code smoke test: one weak-model session through /v1/messages.
+[run]
+id = "cc_smoke"
+[policy]
+kind = "fixed"
+model = "weak"
+[budget]
+per_session_usd = 0.5
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/cc_smoke/calls.jsonl"

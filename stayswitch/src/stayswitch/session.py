@@ -13,12 +13,15 @@ from typing import Any
 
 # Container shell prompts (``root@d598cdcdc569:/app#``) differ per trial; forks must still match their source.
 _CONTAINER_HOST = re.compile(r"\b([\w.-]+)@[0-9a-f]{12}\b")
+# Claude Code appends a running "<total_tokens>N tokens left</total_tokens>" note that depends on provider usage.
+_TOKEN_COUNTER = re.compile(r"<total_tokens>[\d,]+ tokens left</total_tokens>")
 
 
 def _digest(obj: Any, *, normalize: bool = True) -> str:
     text = json.dumps(obj, sort_keys=True, default=str)
     if normalize:
         text = _CONTAINER_HOST.sub(r"\1@<host>", text)
+        text = _TOKEN_COUNTER.sub("<total_tokens/>", text)
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
@@ -33,6 +36,25 @@ def task_key(messages: list[dict[str, Any]]) -> str:
         if m.get("role") == "user":
             return _digest(m.get("content"))
     return messages_hash(messages[:1])
+
+
+_DERIVED_ID = re.compile(r"-summarization-|~sub-")
+_BILLING_HEADER = re.compile(r'x-anthropic-billing-header:[^\\"]*')
+
+
+def root_session_id(session_id: str) -> str:
+    """The trajectory a derived id (terminus-2 summariser, Claude Code subagent) belongs to."""
+    return _DERIVED_ID.split(session_id, 1)[0]
+
+
+def agent_key(system: Any, tools: Any) -> str:
+    """Identify which agent of a Claude Code session sent a request.
+
+    A subagent shares the parent's session header but has its own system prompt and tool set. The
+    per-request billing header Claude Code prepends to the system prompt is ignored.
+    """
+    names = [t.get("name") for t in tools or [] if isinstance(t, dict)]
+    return _digest([_BILLING_HEADER.sub("", json.dumps(system, sort_keys=True, default=str)), names], normalize=False)
 
 
 def fallback_session_id(messages: list[dict[str, Any]]) -> str:

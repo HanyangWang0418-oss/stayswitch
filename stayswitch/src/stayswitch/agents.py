@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 import shlex
 
+from harbor.agents.installed.claude_code import ClaudeCode
 from harbor.agents.terminus_2.terminus_2 import Terminus2
 from harbor.agents.terminus_2.tmux_session import TmuxSession
 
@@ -32,6 +33,25 @@ def apt_mirror_command(mirror: str) -> str:
     seds = " ".join(f"-e {shlex.quote(f's#{host}#{mirror}#g')}" for host in _APT_HOSTS)
     files = "/etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list"
     return f"for f in {files}; do [ -f \"$f\" ] && sed -i {seds} \"$f\"; done; true"
+
+
+class StaySwitchClaudeCode(ClaudeCode):
+    """Claude Code with the task container's apt sources pointed at a nearby mirror before install.
+
+    Harbor installs Claude Code by apt-installing curl/nodejs/npm/procps, which takes over
+    ten minutes from ports.ubuntu.com here, then running Anthropic's bootstrap script.
+    Use with ``--agent stayswitch.agents:StaySwitchClaudeCode``.
+    """
+
+    @staticmethod
+    def name() -> str:
+        return "stayswitch-claude-code"
+
+    async def install(self, environment) -> None:
+        mirror = os.environ.get("STAYSWITCH_APT_MIRROR", DEFAULT_APT_MIRROR)
+        if mirror:
+            await environment.exec(command=apt_mirror_command(mirror), user="root", timeout_sec=30)
+        await super().install(environment)
 
 
 class StaySwitchTerminus(Terminus2):

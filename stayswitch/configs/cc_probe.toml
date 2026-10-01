@@ -1,0 +1,9 @@
+[run]
+id = "cc_probe"
+[policy]
+kind = "fixed"
+model = "mid"
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/cc_probe/calls.jsonl"

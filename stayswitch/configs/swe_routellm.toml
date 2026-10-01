@@ -10,7 +10,7 @@ threshold = 0.5061   # median strong-win-rate over 861 prompts from swe_strong t
 
 [budget]
 per_session_usd = 3.0
-total_usd = 245.0
+total_usd = 300.0       # raised from 245 to 300 on 2026-10-01 (user); the ledger sums every runs/*/calls.jsonl
 
 [prices]
 path = "prices.toml"

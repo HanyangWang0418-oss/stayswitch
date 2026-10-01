@@ -24,6 +24,8 @@ class Decision:
     model: str
     replay: str | None = None  # recorded response text to return instead of calling a model
     note: str = ""
+    replay_tool_calls: list[dict[str, Any]] | None = None  # recorded tool calls (tool-calling agents such as Claude Code)
+    replay_extra: dict[str, Any] | None = None  # recorded reasoning text and token usage, replayed so the agent's prompt matches
 
 
 class Policy(Protocol):
@@ -76,6 +78,8 @@ class RecordedCall:
     input_hash: str
     response_text: str
     model: str
+    tool_calls: list[dict[str, Any]] | None = None
+    extra: dict[str, Any] | None = None
 
 
 class TraceBank:
@@ -96,7 +100,7 @@ class TraceBank:
                     continue
                 task_of[sid] = rec["task"]
                 by_session[sid].append(
-                    RecordedCall(rec["step"], rec["input_hash"], rec["response_text"], rec["model"])
+                    RecordedCall(rec["step"], rec["input_hash"], rec["response_text"], rec["model"], rec.get("tool_calls") or None, rec.get("replay_extra"))
                 )
         traces: dict[str, list[RecordedCall]] = {}
         for sid, calls in by_session.items():
@@ -144,7 +148,7 @@ class ForkPolicy:
                 state.diverged_at = state.step
                 state.extra["fork_at"] = fork_at = state.step
             else:
-                return Decision(recorded.model, replay=recorded.response_text, note="replay")
+                return Decision(recorded.model, replay=recorded.response_text, note="replay", replay_tool_calls=recorded.tool_calls, replay_extra=recorded.extra)
         if state.step < fork_at:  # source trace ended before the fork step
             state.extra["fork_at"] = fork_at = state.step
         in_option = self.horizon is None or state.step < fork_at + self.horizon

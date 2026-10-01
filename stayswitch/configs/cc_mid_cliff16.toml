@@ -1,0 +1,17 @@
+# SWE-bench Verified: Claude Code on mid, CliffCompaction 16K (official CliffCompaction proxy, see scripts/run_cliff.sh)
+[run]
+id = "cc_mid_cliff16"
+
+[policy]
+kind = "fixed"
+model = "mid"
+
+[budget]
+per_session_usd = 3.0
+total_usd = 300.0       # raised from 245 to 300 on 2026-10-01 (user); the ledger sums every runs/*/calls.jsonl
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/cc_mid_cliff16/calls.jsonl"

@@ -1,0 +1,19 @@
+# Claude Code smoke test: weak model that escalates on failures, with proxy-side compaction at a low budget.
+[run]
+id = "cc_ctx"
+[policy]
+kind = "trigger_escalate"
+weak = "weak"
+strong = "strong"
+fail_streak = 2
+max_weak_steps = 40
+[context]
+mode = "budget"
+budget = 21000
+keep = 2
+[budget]
+per_session_usd = 0.8
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/cc_ctx/calls.jsonl"

@@ -321,6 +321,7 @@ scripts/start_proxy.sh configs/mock_fixed.toml 4011 &
 |---|---|
 | trial 报 `RewardFileNotFoundError` 或 `RuntimeError: Failed to start tmux` | 一般是基础设施问题。只重跑这几个任务：把任务名写进一个列表，用同一个配置再跑一次，汇总时会自动采用最新的 trial |
 | 同一批任务在重复跑 | 检查是不是启动了两个 Harbor 任务(`pgrep -fl "harbor run"`)。要停掉某个 `run_model.sh` 而不影响共用的 proxy 时，用 `kill -9`,否则它退出时会顺手关掉 proxy |
+| 停掉实验后，还有 trial 在不断启动 | `uv run harbor ...` 有两层进程：外层是 `uv`,里面才是真正的 harbor(Python)。只结束外层，里面的进程会变成孤儿继续跑。要把两层都按 PID 结束(`ps -eo pid,ppid,command \| grep "harbor run"`),再删除对应的容器 |
 | 用 `pkill -f` 时把自己也杀了 | 匹配模式也出现在当前命令行里时会误杀自身。改用具体的 PID |
 | 等待别的队列结束时永远在等 | 用 `pgrep -f` 等待时，匹配串不能出现在等待脚本自己的命令行里。改为按 PID 等待(参考 `runs/queue_*.sh` 的写法) |
 | 上下文超过 64K 报错 | 虚拟模型名 `stayswitch` 对 LiteLLM 来说是未知模型，所以要通过 `STAYSWITCH_MAX_INPUT_TOKENS` 告诉 terminus-2 真实上限 |

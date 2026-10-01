@@ -53,6 +53,13 @@ model_list:
         Authorization: os.environ/GATEWAY_AUTH_HEADER
         limit-price: os.environ/GATEWAY_LIMIT_PRICE
 
+  # Replayed calls on /v1/messages (Claude Code forks) are served by stayswitch.replay_server, started by the hook.
+  - model_name: replay
+    litellm_params:
+      model: anthropic/replay
+      api_base: http://127.0.0.1:4390
+      api_key: sk-replay
+
   # ---- Offline test pool: never calls a provider ----
   - model_name: mock-strong
     litellm_params:
@@ -68,6 +75,8 @@ model_list:
 litellm_settings:
   callbacks: stayswitch_hook.proxy_handler_instance
   drop_params: true
+  # Anthropic-format clients (Claude Code) -> OpenAI-compatible backends: Tinker serves chat/completions only.
+  use_chat_completions_url_for_anthropic_messages: true
   # Tinker drops connections now and then (59 of 1115 weak-baseline calls); retry before the agent sees an error.
   num_retries: 4
   request_timeout: 600

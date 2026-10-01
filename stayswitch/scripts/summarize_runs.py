@@ -48,12 +48,15 @@ def load_trials(run: str) -> list[dict]:
             if steps and steps[0].get("message"):
                 key = task_key([{"role": "user", "content": steps[0]["message"]}])
         agent_exec = result.get("agent_execution") or {}
+        # Claude Code keeps one transcript per session, named by the id it sends as x-claude-code-session-id.
+        cc_sessions = sorted(p.stem for p in (trial_dir / "agent" / "sessions" / "projects").glob("*/*.jsonl"))
         trial = {
             "task": result.get("task_name", trial_dir.name).split("/")[-1],
             "trial": trial_dir.name,
             "reward": rewards.get("reward"),
             "exception": exc.get("exception_type"),
             "task_key": key,
+            "session_ids": cc_sessions,
             "window": (_epoch(agent_exec.get("started_at")), _epoch(agent_exec.get("finished_at"))),
             "started": result.get("started_at") or "",
         }
@@ -104,12 +107,16 @@ def summarise(run: str) -> dict:
     first_ts = {p: min(c["ts"] for c in cs) for p, cs in by_parent.items()}
     rows = []
     for trial in load_trials(run):
-        sids = sessions_by_task.get(trial["task_key"], []) if trial["task_key"] else []
-        # A rerun leaves several sessions per task; keep the ones that ran inside this trial's agent window.
         window = trial.pop("window")
         trial.pop("started")
-        if len(sids) > 1:
-            sids = [s for s in sids if _in_window(first_ts[s], window)]
+        direct = [s for s in trial.pop("session_ids") if s in by_parent]
+        if direct:  # the trial names its sessions (Claude Code): no guessing needed
+            sids = direct
+        else:
+            sids = sessions_by_task.get(trial["task_key"], []) if trial["task_key"] else []
+            # A rerun leaves several sessions per task; keep the ones that ran inside this trial's agent window.
+            if len(sids) > 1:
+                sids = [s for s in sids if _in_window(first_ts[s], window)]
         stats = session_stats([c for s in sids for c in by_parent[s]]) if sids else None
         rows.append({**trial, "sessions": len(sids), **(stats or {})})
     return {"run": run, "trials": rows}

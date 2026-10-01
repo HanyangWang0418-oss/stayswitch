@@ -1,0 +1,16 @@
+# Claude Code smoke test of replay forking: replay 3 recorded calls, then strong takes over.
+[run]
+id = "cc_fork"
+[policy]
+kind = "fork"
+source_log = "../runs/cc_smoke/calls.jsonl"
+fork_step = 2
+option_model = "strong"
+base_model = "weak"
+horizon = 0
+[budget]
+per_session_usd = 0.5
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/cc_fork/calls.jsonl"

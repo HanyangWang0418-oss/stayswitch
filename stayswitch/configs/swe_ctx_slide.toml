@@ -12,7 +12,7 @@ chunk = 1    # turns evicted at once; prefix stays stable for this many calls
 
 [budget]
 per_session_usd = 3.0
-total_usd = 245.0
+total_usd = 300.0       # raised from 245 to 300 on 2026-10-01 (user); the ledger sums every runs/*/calls.jsonl
 
 [prices]
 path = "prices.toml"

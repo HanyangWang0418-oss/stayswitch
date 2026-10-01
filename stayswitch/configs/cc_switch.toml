@@ -1,0 +1,14 @@
+# Claude Code smoke test: switch strong<->weak every 2 calls through /v1/messages.
+[run]
+id = "cc_switch"
+[policy]
+kind = "random_segment"
+models = ["strong", "weak"]
+p_switch = 1.0
+min_stay = 2
+[budget]
+per_session_usd = 0.8
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/cc_switch/calls.jsonl"

@@ -4,6 +4,7 @@
 #        scripts/run_cliff.sh <task_list> <config> eoq <extra_steps>
 # <config> is a StaySwitch router config (normally a fixed model, no [context]); its run id names
 # runs/<id>/ and jobs/<id>/. The agent's own summariser is disabled: compaction is CliffCompaction's job.
+# AGENT=cc runs Claude Code (Anthropic dialect) instead of terminus-2.
 set -euo pipefail
 task_list="$1"; config="$2"; mode="$3"; arg="$4"
 dataset="${DATASET:-swe-bench/swe-bench-verified}"
@@ -23,7 +24,8 @@ trap cleanup EXIT
 scripts/start_proxy.sh "$config" "$router_port" > "runs/proxy_$run_id.log" 2>&1 &
 for _ in $(seq 1 90); do curl -s "localhost:$router_port/health/liveliness" >/dev/null && break; sleep 1; done
 
-serve=(serve --port "$cliff_port" --keep-recent "$keep" --openai-upstream "http://127.0.0.1:$router_port")
+serve=(serve --port "$cliff_port" --keep-recent "$keep" --openai-upstream "http://127.0.0.1:$router_port" \
+  --anthropic-upstream "http://127.0.0.1:$router_port")
 if [ "$mode" = fixed ]; then
   uv run --group cliff cliff "${serve[@]}" --threshold "$arg" > "runs/$run_id/cliff.log" 2>&1 &
 else
@@ -34,8 +36,15 @@ for _ in $(seq 1 60); do curl -s -o /dev/null "localhost:$cliff_port/" && break;
 
 include=()
 for t in $(sed 's/#.*//' "$task_list" | awk 'NF {print $1}'); do include+=(-i "${dataset%%/*}/$t"); done
-STAYSWITCH_API_BASE="http://127.0.0.1:$cliff_port/v1" STAYSWITCH_MAX_INPUT_TOKENS=1000000 OPENAI_API_KEY=sk-dummy \
-  scripts/run_harbor.sh "$dataset" "jobs/$run_id" "${include[@]}" -n "$conc" > "runs/harbor_$run_id.log" 2>&1 \
-  || echo "harbor exited non-zero (see runs/harbor_$run_id.log)"
+if [ "${AGENT:-terminus}" = cc ]; then
+  # Claude Code runs inside the container and speaks the Anthropic dialect to CliffCompaction.
+  CC_BASE_URL="http://host.docker.internal:$cliff_port" \
+    scripts/run_harbor_cc.sh "$dataset" "jobs/$run_id" "${include[@]}" -n "$conc" > "runs/harbor_$run_id.log" 2>&1 \
+    || echo "harbor exited non-zero (see runs/harbor_$run_id.log)"
+else
+  STAYSWITCH_API_BASE="http://127.0.0.1:$cliff_port/v1" STAYSWITCH_MAX_INPUT_TOKENS=1000000 OPENAI_API_KEY=sk-dummy \
+    scripts/run_harbor.sh "$dataset" "jobs/$run_id" "${include[@]}" -n "$conc" > "runs/harbor_$run_id.log" 2>&1 \
+    || echo "harbor exited non-zero (see runs/harbor_$run_id.log)"
+fi
 
 uv run python scripts/summarize_runs.py "$run_id"
