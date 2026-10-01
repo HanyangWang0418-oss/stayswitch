@@ -66,10 +66,20 @@ def load(run_id: str) -> dict[str, dict]:
         return {}
     index = trial_index(run_id)
     sessions: dict[str, list[dict]] = defaultdict(list)
+    stopped: set[str] = set()
     for line in path.read_text().splitlines():
         r = json.loads(line)
+        if r.get("note") == "budget_stop" and str(r.get("stop_reason", "")).startswith("total"):
+            stopped.add(r["session_id"].split("~sub-")[0])  # the shared ledger ran out: not this arm's result
+        # A per-trajectory stop ("trajectory budget ... spent") is the same rule for every arm and counts as-is.
         if r.get("ok") and not r.get("replayed") and r["model"] in PRICES:
             sessions[r["session_id"]].append(r)
+    if stopped:
+        # The proxy ended these trajectories itself (per-session or total budget): their results are not the arm's.
+        print(f"WARNING {run_id}: {len(stopped)} trajectories hit the TOTAL budget stop and are excluded: "
+              + ", ".join(index.get(s, (s[:8],))[0] for s in sorted(stopped)), file=sys.stderr)
+        for s in stopped:
+            sessions.pop(s, None)
     has_sub = any("~sub-" in sid for sid in sessions)
     legacy = not has_sub and not any(k in run_id for k in ("cliff", "eoq"))
     tasks: dict[str, dict] = {}
