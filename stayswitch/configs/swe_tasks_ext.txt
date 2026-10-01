@@ -1,0 +1,24 @@
+# SWE-bench Verified extension: +21 tasks, same repos as swe_tasks.txt, <= 6 per repo,
+# chosen by fewest uncached image bytes (layers shared with images already fetched). Run with the base list.
+# instance  difficulty  image_GB  to_download_GB
+astropy__astropy-14365  # 15 min - 1 hour  0.90  0.01
+astropy__astropy-14508  # 15 min - 1 hour  0.90  0.01
+astropy__astropy-14598  # 15 min - 1 hour  0.90  0.01
+django__django-10914  # <15 min fix  0.96  0.01
+django__django-10973  # 15 min - 1 hour  0.96  0.01
+django__django-10999  # <15 min fix  0.96  0.01
+mwaskom__seaborn-3069  # 15 min - 1 hour  0.85  0.01
+psf__requests-1142  # <15 min fix  0.70  0.00
+psf__requests-1724  # <15 min fix  0.70  0.00
+psf__requests-1766  # <15 min fix  0.70  0.00
+psf__requests-1921  # <15 min fix  0.70  0.00
+pylint-dev__pylint-6903  # <15 min fix  0.74  0.00
+pylint-dev__pylint-7277  # <15 min fix  0.74  0.00
+pytest-dev__pytest-5840  # 15 min - 1 hour  0.72  0.00
+pytest-dev__pytest-6202  # <15 min fix  0.72  0.00
+pytest-dev__pytest-7490  # 15 min - 1 hour  0.72  0.00
+sphinx-doc__sphinx-8551  # 15 min - 1 hour  0.82  0.03
+sphinx-doc__sphinx-8638  # 15 min - 1 hour  0.82  0.03
+sympy__sympy-11618  # 15 min - 1 hour  0.90  0.00
+sympy__sympy-12096  # <15 min fix  0.90  0.00
+sympy__sympy-12419  # 15 min - 1 hour  0.90  0.00
