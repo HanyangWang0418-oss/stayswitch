@@ -399,3 +399,80 @@ def test_session_store_observe_feeds_the_ledger():
     assert st.cache.cached_prefix("weak", 14_000, None, sem) == 12_000
     store.advance(st, "weak"); store.observe("s", "weak", 5_000, prefix_reset=True)
     assert st.cache.entries == {"weak": (5_000, st.last_call_ts)}
+
+
+def _drive_cost(policy, turns, ctx_tokens, *, reset_at=None):
+    """Like _drive_msgs, but feeds the session ledger: every call is observed at ``ctx_tokens`` on its model."""
+    store = SessionStore()
+    msgs = [{"role": "user", "content": "fix the bug"}]
+    out = []
+    for i, (keys, obs) in enumerate([(None, None)] + turns):
+        if keys is not None:
+            msgs = msgs + [_terminus_turn(keys), {"role": "user", "content": obs}]
+        state = store.get("s", msgs)
+        d = policy.decide(state, msgs)
+        store.advance(state, d.model)
+        store.observe("s", d.model, ctx_tokens, prefix_reset=(i == reset_at))
+        out.append(d)
+    return out
+
+
+def test_cost_escalate_gates_the_trigger_by_price():
+    from stayswitch.cache import TINKER
+    from stayswitch.costmodel import CostModel
+    from stayswitch.policy import CostAwareEscalatePolicy, build_policy
+    from stayswitch.pricing import PriceTable
+
+    prices = PriceTable({"w": HAIKU, "s": OPUS})
+    cm = CostModel(prices, TINKER)
+    failing = [("ls\n", "ok"), ("cat a\n", "Error: x"), ("cat b\n", "Error: y"), ("ls -l\n", "ok"), ("pwd\n", "ok")]
+
+    def run(value_usd, ctx, **kw):
+        p = CostAwareEscalatePolicy("w", "s", cm, value_usd=value_usd, remaining_steps=10, fail_streak=2, max_weak_steps=None, **kw)
+        return _drive_cost(p, failing, ctx, **{k: v for k, v in kw.items() if k == "reset_at"})
+
+    # A generous value escalates exactly where trigger_escalate would.
+    rich = run(100.0, 20_000)
+    assert [d.model for d in rich] == ["w", "w", "w", "s", "s", "s"] and rich[3].note.startswith("fail_streak cost=")
+    # A stingy value never escalates, but records that the trigger fired and was deferred.
+    poor = run(0.0, 20_000)
+    assert [d.model for d in poor] == ["w"] * 6 and poor[3].note.startswith("fail_streak too_expensive=")
+    # The gate is monotone in context size: the same value escalates at 5k tokens but not at 60k.
+    p_small = CostAwareEscalatePolicy("w", "s", cm, value_usd=0.5, remaining_steps=10, fail_streak=2, max_weak_steps=None)
+    p_large = CostAwareEscalatePolicy("w", "s", cm, value_usd=0.5, remaining_steps=10, fail_streak=2, max_weak_steps=None)
+    assert _drive_cost(p_small, failing, 5_000)[3].model == "s"
+    assert _drive_cost(p_large, failing, 60_000)[3].model == "w"
+
+
+def test_cost_escalate_switch_is_cheaper_right_after_a_compaction():
+    from stayswitch.cache import TINKER
+    from stayswitch.costmodel import CostModel
+    from stayswitch.pricing import PriceTable
+    from stayswitch.policy import CostAwareEscalatePolicy
+
+    cm = CostModel(PriceTable({"w": HAIKU, "s": OPUS}), TINKER)
+    p = CostAwareEscalatePolicy("w", "s", cm, value_usd=10.0, remaining_steps=10, fail_streak=2, max_weak_steps=None)
+    store = SessionStore()
+    msgs = [{"role": "user", "content": "t"}, _terminus_turn("ls\n"), {"role": "user", "content": "Error: a"},
+            _terminus_turn("ls\n"), {"role": "user", "content": "Error: b"}]
+    st = store.get("s", msgs)
+    store.advance(st, "w"); store.observe("s", "w", 40_000)
+    warm_strong_absent = p.escalation_cost(st, msgs)          # strong never ran: its whole prefix is cold
+    store.advance(st, "s"); store.observe("s", "s", 40_000)   # strong now holds the prefix
+    assert p.escalation_cost(st, msgs) < warm_strong_absent
+    # The per-step part is the same either way; the difference is exactly the cold-cache premium.
+    from stayswitch.cache import CacheLedger
+    from stayswitch.context import est_tokens
+    cold = cm.switch_premium("s", CacheLedger(), ctx_tokens=40_000, new_tokens=est_tokens(msgs[-2:]), output_tokens=900)
+    assert warm_strong_absent - p.escalation_cost(st, msgs) == pytest.approx(cold)
+
+
+def test_build_policy_cost_escalate_requires_cost_model():
+    from stayswitch.policy import build_policy
+    from stayswitch.costmodel import CostModel
+    from stayswitch.pricing import PriceTable
+
+    cfg = {"kind": "cost_escalate", "weak": "w", "strong": "s", "value_usd": 1.0}
+    with pytest.raises(ValueError):
+        build_policy(cfg)
+    assert build_policy(cfg, CostModel(PriceTable({"w": HAIKU, "s": OPUS}))).value_usd == 1.0

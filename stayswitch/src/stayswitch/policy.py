@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Protocol
 
+from stayswitch.context import est_tokens
+from stayswitch.costmodel import CostModel
 from stayswitch.session import SessionState, messages_hash
 from stayswitch.signals import assistant_turns, keystrokes, observation_failed, repeated_action, step_kind
 
@@ -184,18 +186,76 @@ class TriggerEscalatePolicy:
         self.weak, self.strong = weak, strong
         self.fail_streak, self.max_weak_steps = fail_streak, max_weak_steps
 
-    def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
+    def trigger(self, state: SessionState, messages: list[dict[str, Any]]) -> str | None:
+        """Why the cheap model should hand over now, or None."""
         streak = _fail_streak(state, messages)
-        if not state.extra.get("escalated"):
-            reason = (
-                "fail_streak" if streak >= self.fail_streak
-                else "repeat" if repeated_action(messages)
-                else "max_weak" if self.max_weak_steps is not None and state.step >= self.max_weak_steps
-                else None
-            )
-            if reason:
-                state.extra["escalated"] = reason
+        if streak >= self.fail_streak:
+            return "fail_streak"
+        if repeated_action(messages):
+            return "repeat"
+        if self.max_weak_steps is not None and state.step >= self.max_weak_steps:
+            return "max_weak"
+        return None
+
+    def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
+        reason = self.trigger(state, messages)
+        if reason and not state.extra.get("escalated"):
+            state.extra["escalated"] = reason
         return Decision(self.strong if state.extra.get("escalated") else self.weak, note=state.extra.get("escalated") or "")
+
+
+class CostAwareEscalatePolicy(TriggerEscalatePolicy):
+    """``trigger_escalate`` with a cost gate: the same signals ask for the strong model,
+    but the handoff only happens when it is worth paying for.
+
+    The extra cost of escalating now is analytic (``CostModel``): the cold-cache premium
+    of the first strong call, given what this trajectory's ledger says is cached, plus
+    ``remaining_steps`` times the per-step price difference at the current context size.
+    It is paid iff it does not exceed ``value_usd``, the dollar value assigned to the
+    escalation (lambda times the assumed success uplift in Q = lambda * p - C; sweep it
+    for a cost/success curve). A trigger that is too expensive is re-examined on every
+    later call: the context only grows, so it gets dearer, unless a compaction or summary
+    empties the cache, which makes the switch free and lets the escalation go through.
+    Escalation stays permanent, so the only difference from the baseline is the gate.
+    """
+
+    def __init__(
+        self,
+        weak: str,
+        strong: str,
+        cost_model: CostModel,
+        *,
+        value_usd: float,
+        remaining_steps: int = 20,
+        out_tokens: int = 900,
+        fail_streak: int = 3,
+        max_weak_steps: int | None = 40,
+    ) -> None:
+        super().__init__(weak, strong, fail_streak, max_weak_steps)
+        self.cost_model, self.value_usd, self.remaining_steps, self.out_tokens = cost_model, value_usd, remaining_steps, out_tokens
+
+    def escalation_cost(self, state: SessionState, messages: list[dict[str, Any]]) -> float:
+        """Dollars the rest of the trajectory costs extra if the strong model takes over now."""
+        ctx = state.ctx_tokens
+        new = est_tokens(messages[-2:]) if ctx else est_tokens(messages)
+        kw = dict(ctx_tokens=ctx, new_tokens=new, output_tokens=self.out_tokens)
+        premium = self.cost_model.switch_premium(self.strong, state.cache, now=state.last_call_ts, **kw)
+        per_step = self.cost_model.step_cost(self.strong, **kw) - self.cost_model.step_cost(self.weak, **kw)
+        return premium + self.remaining_steps * per_step
+
+    def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
+        x = state.extra
+        reason = self.trigger(state, messages)
+        if x.get("escalated"):
+            return Decision(self.strong, note=x["escalated"])
+        if reason is None:
+            return Decision(self.weak)
+        extra = self.escalation_cost(state, messages)
+        if extra <= self.value_usd:
+            x["escalated"] = f"{reason} cost={extra:.3f}"
+            return Decision(self.strong, note=x["escalated"])
+        x["deferred"] = x.get("deferred", 0) + 1
+        return Decision(self.weak, note=f"{reason} too_expensive={extra:.3f}")
 
 
 class StrongLeadPolicy:
@@ -240,7 +300,7 @@ class StrongLeadPolicy:
         return Decision(self.weak, note="follow")
 
 
-def build_policy(cfg: Mapping[str, Any]) -> Policy:
+def build_policy(cfg: Mapping[str, Any], cost_model: CostModel | None = None) -> Policy:
     kind = cfg["kind"]
     if kind == "fixed":
         return FixedPolicy(cfg["model"])
@@ -252,6 +312,14 @@ def build_policy(cfg: Mapping[str, Any]) -> Policy:
         return WeakFirstPolicy(cfg["weak"], cfg["strong"], cfg["k"])
     if kind == "trigger_escalate":
         return TriggerEscalatePolicy(cfg["weak"], cfg["strong"], cfg.get("fail_streak", 3), cfg.get("max_weak_steps", 40))
+    if kind == "cost_escalate":
+        if cost_model is None:
+            raise ValueError("cost_escalate needs a CostModel (prices + [cache] semantics)")
+        return CostAwareEscalatePolicy(
+            cfg["weak"], cfg["strong"], cost_model,
+            value_usd=cfg["value_usd"], remaining_steps=cfg.get("remaining_steps", 20), out_tokens=cfg.get("out_tokens", 900),
+            fail_streak=cfg.get("fail_streak", 3), max_weak_steps=cfg.get("max_weak_steps", 40),
+        )
     if kind == "strong_lead":
         return StrongLeadPolicy(cfg["weak"], cfg["strong"], cfg.get("lead_max", 30), cfg.get("fail_streak", 3), cfg.get("commit", 8))
     if kind == "routellm":

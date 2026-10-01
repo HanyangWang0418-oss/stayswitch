@@ -1,0 +1,26 @@
+# SWE-bench Verified pilot: swe_cost_escalate
+[run]
+id = "swe_cost_escalate"
+
+[policy]
+kind = "cost_escalate"   # trigger_escalate (B5) behind a cost gate: same triggers, escalate only when it is worth paying for
+weak = "weak"
+strong = "strong"
+fail_streak = 3
+max_weak_steps = 40
+value_usd = 0.6          # lambda * assumed success uplift; sweep (0.3 / 0.6 / 1.2) for the cost/success curve
+remaining_steps = 20     # L-hat prior: steps the strong model is assumed to run after taking over
+out_tokens = 900
+
+[cache]
+preset = "tinker"
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_cost_escalate/calls.jsonl"

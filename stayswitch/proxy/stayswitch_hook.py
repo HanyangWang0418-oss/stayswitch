@@ -73,10 +73,10 @@ class StaySwitchRouter(CustomLogger):
     def __init__(self) -> None:
         super().__init__()
         cfg = _load_config()
-        self.policy = build_policy(cfg["policy"])
         self.prices = PriceTable.load(cfg["prices"]["path"])
         # [cache] names the provider's cache rules (preset and overrides); policies and analysis price switches with it.
         self.cost_model = CostModel(self.prices, semantics_from_config(cfg.get("cache")))
+        self.policy = build_policy(cfg["policy"], self.cost_model)
         self.log = CallLog(cfg["log"]["path"])
         self.run_id = cfg.get("run", {}).get("id", "")
         self.sessions = SessionStore()
