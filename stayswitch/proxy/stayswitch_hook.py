@@ -20,8 +20,10 @@ from typing import Any
 from litellm.integrations.custom_logger import CustomLogger
 
 from stayswitch.budget import Budget
+from stayswitch.cache import semantics_from_config
 from stayswitch.calllog import CallLog
 from stayswitch.context import Compactor, eoq_threshold, evict, fixed_threshold
+from stayswitch.costmodel import CostModel
 from stayswitch.policy import Decision, ForkPolicy, build_policy
 from stayswitch.pricing import PriceTable, Usage, cost
 from stayswitch.session import SessionStore, fallback_session_id, messages_hash
@@ -73,6 +75,8 @@ class StaySwitchRouter(CustomLogger):
         cfg = _load_config()
         self.policy = build_policy(cfg["policy"])
         self.prices = PriceTable.load(cfg["prices"]["path"])
+        # [cache] names the provider's cache rules (preset and overrides); policies and analysis price switches with it.
+        self.cost_model = CostModel(self.prices, semantics_from_config(cfg.get("cache")))
         self.log = CallLog(cfg["log"]["path"])
         self.run_id = cfg.get("run", {}).get("id", "")
         self.sessions = SessionStore()
@@ -156,8 +160,15 @@ class StaySwitchRouter(CustomLogger):
             return
         usage_raw = _usage(response_obj)
         usage = Usage.from_openai_usage(usage_raw)
-        self.sessions.observe(meta["session_id"], usage.prompt_tokens)
         model = meta["model"]
+        cache_pred = None
+        if not meta["replayed"]:  # mocks carry no real usage and touch no cache
+            state = self.sessions.peek(meta["session_id"])
+            if state is not None:
+                # What our cache semantics predicted this call would read; compare with usage.cache_read.
+                cache_pred = state.cache.cached_prefix(model, usage.prompt_tokens, state.last_call_ts, self.cost_model.semantics)
+            compacted = bool((meta.get("ctx") or {}).get("compacted"))
+            self.sessions.observe(meta["session_id"], model, usage.prompt_tokens, prefix_reset=compacted)
         # Replayed and budget-stop responses are mocks: their usage is fake and nothing was billed.
         usd = 0.0 if meta["replayed"] or model not in self.prices else cost(self.prices[model], usage)
         self.budget.charge(meta["session_id"].split("-summarization-", 1)[0], usd)
@@ -174,6 +185,8 @@ class StaySwitchRouter(CustomLogger):
                     "output": usage.output,
                 },
                 "usage_raw": usage_raw,
+                "cache_pred": cache_pred,
+                "cache_semantics": self.cost_model.semantics.name,
                 "cost": usd,
                 "provider_cost": kwargs.get("response_cost"),
                 "latency_s": (end_time - start_time).total_seconds(),

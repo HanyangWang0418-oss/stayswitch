@@ -27,7 +27,7 @@ StaySwitch proxy (LiteLLM + stayswitch_hook)   ← 路由、压缩、记账、�
 
 | 路径 | 作用 |
 |---|---|
-| `src/stayswitch/` | 核心库：计价、会话、策略、信号、压缩、预算、记账 |
+| `src/stayswitch/` | 核心库：计价、缓存语义与账本、成本模型、会话、策略、信号、压缩、预算、记账 |
 | `proxy/stayswitch_hook.py` | LiteLLM 回调：每次调用前做路由和压缩，调用后写日志 |
 | `proxy/litellm_config.yaml` | 模型池(`strong` / `mid` / `weak` / `ds-*` / `mock-*`) |
 | `configs/*.toml` | 每个实验一份配置;`prices.toml` 是价目表 |
@@ -206,6 +206,9 @@ keep = 4
 per_session_usd = 3.0              # 单条轨迹上限;超出后 proxy 替 agent 回复"任务完成"
 total_usd = 245.0                  # 所有 runs/*/calls.jsonl 合计的上限(不含 mock 模型)
 
+[cache]                            # 可选：供应商的缓存规则，见 6.3
+preset = "tinker"
+
 [prices]
 path = "prices.toml"
 
@@ -242,6 +245,19 @@ terminus-2 做摘要时会用派生的会话 ID(`<id>-summarization-*`),这些�
 
 做压缩时间实验，建议优先用第 5.2 节的 CliffCompaction 串联方式，它的压缩机制是公开实现，可比性更好。
 
+### 6.3 缓存语义 `[cache]`
+
+描述供应商怎样缓存和计费前缀。`preset` 可选 `table`(默认：持久缓存，缓存价格取 `prices.toml`)、`tinker`、`deepseek`、`anthropic`、`oblivious`(完全不考虑缓存)；其余字段可以逐个覆盖：
+
+| 字段 | 含义 |
+|---|---|
+| `ttl_s` | 缓存存活时间(秒)；省略或 `None` 表示持久，`0` 表示从不缓存 |
+| `read_mult` / `write_mult` | 缓存读 / 写价格相对输入价的倍数；不填则用价目表 |
+| `min_prefix` | 短于此的前缀不缓存(Anthropic 为 1024) |
+| `cross_model` | 假设不同模型可以共用缓存(第 12 节的上限估算) |
+
+proxy 用它构造 `CostModel`，并在每条日志里写 `cache_pred`(按这套语义预测本次能读到的缓存 token 数)，和实际的 `usage.cache_read` 对照，可以检验语义是否符合供应商的真实行为。
+
 ---
 
 ## 7. 结果和分析
@@ -266,6 +282,7 @@ uv run python scripts/summarize_runs.py swe_strong swe_mid swe_cliff16
 | `note` | 策略备注，如 `lead`、`rescue`、`replay`、`budget_stop`、`summary` |
 | `replayed` | 是否为回放 / 预算截停的模拟回复(这类调用不计费) |
 | `usage` | `fresh_input` / `cache_read` / `cache_write` / `output` 四类 token |
+| `cache_pred`, `cache_semantics` | 按 `[cache]` 语义预测的缓存读 token 数(回放调用为空)，以及所用语义的名字 |
 | `cost` | 按 `prices.toml` 算出的花费 |
 | `n_messages`, `n_messages_sent`, `ctx_dropped_turns`, `ctx` | 收到的消息数、实际发出的消息数、压缩信息 |
 | `input_hash`, `diverged_at` | 分叉时用来检查回放前缀是否一致 |
@@ -275,9 +292,26 @@ uv run python scripts/summarize_runs.py swe_strong swe_mid swe_cliff16
 
 ```python
 from stayswitch.accounting import Call, reprice
+from stayswitch.cache import ANTHROPIC, TINKER, CacheSemantics
+from stayswitch.calllog import read_calls
 from stayswitch.pricing import PriceTable
-bill = reprice(calls, PriceTable.load("configs/prices.toml"), ttl_s=None)   # ttl_s=None 表示持久缓存
+
+prices = PriceTable.load("configs/prices.toml")
+calls = [Call.from_record(r) for r in read_calls("runs/swe_strong/calls.jsonl") if r.get("ok")]  # 按 session 分组后再传
+bill = reprice(calls, prices, TINKER)                                  # 或 ANTHROPIC、CacheSemantics(ttl_s=600, ...)
 bill.cache_aware, bill.cache_oblivious, bill.switches, bill.cold_calls
+```
+
+压缩或摘要之后 prompt 变短，所有模型的前缀缓存都会失效；`reprice` 通过日志里的 `ctx.compacted` 和"prompt 比上一次短"两个信号识别这一点。
+
+切换的解析成本用 `CostModel`:
+
+```python
+from stayswitch.costmodel import CostModel
+cm = CostModel(prices, TINKER)
+cm.step_cost("strong", ctx_tokens=60_000, new_tokens=2_000, output_tokens=800)      # 缓存全热时一步的花费
+cm.breakeven_steps("strong", "mid", ctx_tokens=60_000, new_tokens=2_000, output_tokens=800)  # 切过去几步能回本(含切回的代价)
+cm.switch_premium("mid", state.cache, ctx_tokens=..., new_tokens=..., output_tokens=...)      # 在线：按会话账本算冷缓存溢价
 ```
 
 ### 7.4 当前花费

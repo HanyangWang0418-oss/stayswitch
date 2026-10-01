@@ -8,6 +8,8 @@ Cache-aware step-level model routing for LLM agents. See `../proposal.md` for th
 | Path | What |
 |---|---|
 | `src/stayswitch/pricing.py` | Price table + usage split (fresh / cache_read / cache_write / output) |
+| `src/stayswitch/cache.py` | `CacheSemantics` (provider cache rules: TTL, read/write multipliers, min prefix, cross-model) + `CacheLedger` (what each model has cached for a trajectory) |
+| `src/stayswitch/costmodel.py` | Analytic cost of the next call, switch premium, return premium, break-even steps under given semantics |
 | `src/stayswitch/session.py` | Per-trajectory state keyed by `X-Session-ID`; task key = hash of first user message |
 | `src/stayswitch/policy.py` | `fixed`, `random_segment`, `fork` (replay prefix → option for H calls → base) |
 | `src/stayswitch/accounting.py` | Re-price a trajectory under cache semantics (E0) |
@@ -44,7 +46,7 @@ Offline smoke test (no keys): `configs/mock_fixed.toml` then `configs/mock_fork.
 - `prices.toml`: Tinker rates are list prices (cached prefill 0.2x, no write premium); `ds-*` rates are placeholders.
 - Qwen3.5 on Tinker ignores `enable_thinking: false`; every step carries reasoning tokens.
 - Tinker's Cloudflare blocks some default User-Agents (error 1010); the pool sets one explicitly.
-- Cache semantics observed on this service: automatic prefix cache per model, persistent across switches (switching back re-reads the old prefix), no cache-write premium. `reprice(..., ttl_s=None)` models this.
+- Cache semantics observed on this service: automatic prefix cache per model, persistent across switches (switching back re-reads the old prefix), no cache-write premium. `reprice(..., semantics=TINKER)` (or `ttl_s=None`) models this.
 - Replay divergence hashes the prompt with container hostnames normalised; other nondeterministic tool output (timestamps, PIDs) will still trip it.
 - Terminus-2 context summarisation calls carry derived session ids (`<id>-summarization-*`) and are routed as separate sessions.
 

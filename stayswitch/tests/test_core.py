@@ -297,3 +297,105 @@ def test_compactor_does_not_thrash_when_kept_turns_exceed_threshold():
     for n in range(1, 12):
         c.view(_long_conv(n), x)
     assert x["compactions"] <= 5  # not one per call
+
+
+# ---- cache semantics / ledger / cost model ----
+
+OPUS = Price.from_mapping({"input": 5.0, "output": 25.0, "cache_write_mult": 1.25, "cache_read_mult": 0.1})
+
+
+def test_ledger_prefix_ttl_shrink_and_cross_model():
+    from stayswitch.cache import ANTHROPIC, CacheLedger, CacheSemantics
+
+    persistent, ttl = CacheSemantics(ttl_s=None), CacheSemantics(ttl_s=300)
+    led = CacheLedger()
+    led.record("strong", 10_000, ts=0.0)
+    assert led.cached_prefix("strong", 12_000, 100.0, persistent) == 10_000
+    assert led.cached_prefix("weak", 12_000, 100.0, persistent) == 0            # another model's cache
+    assert led.cached_prefix("weak", 12_000, 100.0, CacheSemantics(ttl_s=None, cross_model=True)) == 10_000
+    assert led.cached_prefix("strong", 12_000, 400.0, ttl) == 0                # expired
+    assert led.cached_prefix("strong", 8_000, 100.0, persistent) == 0          # prompt shrank: history rewritten
+    led.record("weak", 12_000, ts=1.0)
+    assert led.cached_prefix("strong", 14_000, 2.0, persistent) == 10_000      # strong's prefix survived the switch
+    led.record("strong", 6_000, ts=3.0)                                       # a summary shortened the prompt
+    assert led.entries == {"strong": (6_000, 3.0)}
+    assert CacheLedger({"m": (500, 0.0)}).cached_prefix("m", 2_000, 1.0, ANTHROPIC) == 0  # below min_prefix
+
+
+def test_semantics_price_override_and_config():
+    from stayswitch.cache import TINKER, CacheSemantics, semantics_from_config
+
+    p = TINKER.price(HAIKU)
+    assert (p.cache_read, p.cache_write) == pytest.approx((0.2, 1.0))
+    assert CacheSemantics().price(HAIKU) == HAIKU
+    s = semantics_from_config({"preset": "anthropic", "ttl_s": 3600})
+    assert s.ttl_s == 3600 and s.read_mult == 0.1 and s.min_prefix == 1024
+    assert semantics_from_config(None).name == "table"
+
+
+def test_reprice_goes_cold_after_compaction_or_summary():
+    from stayswitch.accounting import Call, reprice
+    from stayswitch.cache import OBLIVIOUS
+    from stayswitch.pricing import PriceTable
+
+    prices = PriceTable({"s": OPUS})
+    steady = [Call("s", 60_000 + 2_000 * i, 800, ts=float(i)) for i in range(6)]
+    flagged = [*steady[:3], Call("s", 66_000, 800, ts=3.0, prefix_reset=True), *steady[4:]]
+    shrunk = [*steady[:3], Call("s", 20_000, 800, ts=3.0), *steady[4:]]
+    assert reprice(steady, prices).cold_calls == 1
+    assert reprice(flagged, prices).cold_calls == 2
+    assert reprice(shrunk, prices).cold_calls == 2
+    assert reprice(flagged, prices).cache_aware > reprice(steady, prices).cache_aware
+    b = reprice(steady, prices, OBLIVIOUS)
+    assert b.cache_aware == pytest.approx(b.cache_oblivious)
+
+
+def test_call_from_record():
+    from stayswitch.accounting import Call
+
+    rec = {"model": "s", "usage": {"fresh_input": 100, "cache_read": 900, "cache_write": 0, "output": 50},
+           "ts": 1.5, "ctx": {"compacted": True}}
+    assert Call.from_record(rec) == Call("s", 1000, 50, 1.5, True)
+
+
+def test_breakeven_reproduces_observation_a_and_its_correction():
+    from stayswitch.cache import ANTHROPIC, OBLIVIOUS, CacheSemantics
+    from stayswitch.costmodel import CostModel
+    from stayswitch.pricing import PriceTable
+
+    prices = PriceTable({"opus": OPUS, "haiku": HAIKU})
+    kw = dict(ctx_tokens=60_000, new_tokens=2_000, output_tokens=800)
+    cm = CostModel(prices, CacheSemantics(ttl_s=300))
+    # New tokens are charged at the cache-write price (they are written for the next call), so a step
+    # costs a little more than the proposal's table, which priced them as plain input.
+    assert cm.step_cost("opus", **kw) == pytest.approx(0.0625)
+    assert cm.step_cost("haiku", **kw) == pytest.approx(0.0125)
+    # Permanent downgrade: the cold Haiku call repays itself in about 1.4 Haiku steps (proposal table, 60k row).
+    assert cm.breakeven_steps("opus", "haiku", permanent=True, **kw) == pytest.approx(1.4, abs=0.1)
+    # Dip and return inside the TTL: only the segment is rewritten (section 11's correction).
+    within = cm.breakeven_steps("opus", "haiku", gap_s=10, **kw)
+    assert 1.5 < within < 2.5
+    # Return after the TTL: the whole prefix is rewritten, the original observation-A regime.
+    expired = cm.breakeven_steps("opus", "haiku", gap_s=1000, **kw)
+    assert expired > 8 and expired > within
+    # Under cache-oblivious accounting a switch costs nothing, which is the accounting most papers use.
+    assert CostModel(prices, OBLIVIOUS).breakeven_steps("opus", "haiku", **kw) == 0
+    # Anthropic rules via the preset ignore the table's multipliers and apply their own.
+    assert CostModel(prices, ANTHROPIC).price("haiku").cache_write == pytest.approx(1.25)
+    # Switching to a model that is not cheaper never pays back.
+    assert cm.breakeven_steps("haiku", "opus", **kw) == float("inf")
+
+
+def test_session_store_observe_feeds_the_ledger():
+    from stayswitch.cache import CacheSemantics
+
+    store = SessionStore()
+    msgs = [{"role": "user", "content": "t"}]
+    st = store.get("s", msgs)
+    store.advance(st, "strong"); store.observe("s", "strong", 10_000)
+    store.advance(st, "weak"); store.observe("s", "weak", 12_000)
+    sem = CacheSemantics(ttl_s=None)
+    assert st.cache.cached_prefix("strong", 14_000, None, sem) == 10_000
+    assert st.cache.cached_prefix("weak", 14_000, None, sem) == 12_000
+    store.advance(st, "weak"); store.observe("s", "weak", 5_000, prefix_reset=True)
+    assert st.cache.entries == {"weak": (5_000, st.last_call_ts)}

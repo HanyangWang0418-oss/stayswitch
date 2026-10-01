@@ -10,6 +10,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from stayswitch.cache import CacheLedger
+
 
 # Container shell prompts (``root@d598cdcdc569:/app#``) differ per trial; forks must still match their source.
 _CONTAINER_HOST = re.compile(r"\b([\w.-]+)@[0-9a-f]{12}\b")
@@ -56,6 +58,8 @@ class SessionState:
     switches: int = 0
     # Replay bookkeeping for forks: once the live prefix diverges from the source trace, replay stops.
     diverged_at: int | None = None
+    # What each model has cached for this trajectory (facts only; see stayswitch.cache).
+    cache: CacheLedger = field(default_factory=CacheLedger)
     extra: dict[str, Any] = field(default_factory=dict)
 
     def seconds_since_last_call(self, now: float | None = None) -> float | None:
@@ -90,9 +94,10 @@ class SessionStore:
             state.last_call_ts = time.time()
             state.step += 1
 
-    def observe(self, session_id: str, prompt_tokens: int) -> None:
-        """Record the context size the finished call actually had."""
+    def observe(self, session_id: str, model: str, prompt_tokens: int, *, prefix_reset: bool = False) -> None:
+        """Record the context size the finished call actually had, and that ``model`` now has it cached."""
         with self._lock:
             state = self._sessions.get(session_id)
             if state is not None:
                 state.ctx_tokens = prompt_tokens
+                state.cache.record(model, prompt_tokens, state.last_call_ts, prefix_reset=prefix_reset)
