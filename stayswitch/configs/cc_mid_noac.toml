@@ -1,6 +1,6 @@
-# SWE-bench Verified: Claude Code (own auto-compact at ~50K) on mid, no proxy-side compaction
+# SWE-bench Verified: Claude Code on mid with NO effective compaction (the auto-compact override env var was misnamed); ran into the 64K limit
 [run]
-id = "cc_mid"
+id = "cc_mid_noac"
 
 [policy]
 kind = "fixed"
@@ -14,4 +14,4 @@ total_usd = 500.0       # raised to 500 on 2026-10-02 (user); the ledger sums ev
 path = "prices.toml"
 
 [log]
-path = "../runs/cc_mid/calls.jsonl"
+path = "../runs/cc_mid_noac/calls.jsonl"

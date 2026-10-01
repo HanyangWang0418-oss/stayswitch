@@ -8,7 +8,7 @@ model = "mid"
 
 [budget]
 per_session_usd = 3.0   # runaway loops end here; same rule for every policy
-total_usd = 300.0
+total_usd = 500.0       # raised to 500 on 2026-10-02 (user); the ledger sums every runs/*/calls.jsonl
 
 [prices]
 path = "prices.toml"

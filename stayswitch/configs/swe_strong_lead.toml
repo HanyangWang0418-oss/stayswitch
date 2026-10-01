@@ -12,7 +12,7 @@ commit = 8
 
 [budget]
 per_session_usd = 3.0
-total_usd = 300.0       # raised from 245 to 300 on 2026-10-01 (user); the ledger sums every runs/*/calls.jsonl
+total_usd = 500.0       # raised to 500 on 2026-10-02 (user); the ledger sums every runs/*/calls.jsonl
 
 [prices]
 path = "prices.toml"
