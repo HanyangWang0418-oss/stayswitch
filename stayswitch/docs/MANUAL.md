@@ -306,6 +306,13 @@ bill.cache_aware, bill.cache_oblivious, bill.switches, bill.cold_calls
 
 压缩或摘要之后 prompt 变短，所有模型的前缀缓存都会失效；`reprice` 通过日志里的 `ctx.compacted` 和"prompt 比上一次短"两个信号识别这一点。
 
+重算 E0(proposal 第 11 节的表)用现成脚本，它对每条轨迹保持 token 序列不变、只改每步记在哪个模型上，再按 Tinker / DeepSeek / Anthropic 三种规则算钱，并把旧算法(不识别摘要和压缩)的数字放在方括号里对照:
+
+```bash
+uv run python scripts/e0_reprice.py tb2_strong                      # 默认 strong→weak，20 步分段，5 个种子
+uv run python scripts/e0_reprice.py tb2_strong --weak mid --json runs/e0_tb2.json
+```
+
 切换的解析成本用 `CostModel`:
 
 ```python

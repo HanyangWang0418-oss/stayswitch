@@ -104,4 +104,4 @@ class CostModel:
             saving -= new_tokens * (p.cache_write - p.cache_read) / PER_M
         if saving <= 0:
             return float("inf")
-        return premium / saving
+        return max(premium / saving, 0.0)

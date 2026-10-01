@@ -343,8 +343,9 @@ def test_reprice_goes_cold_after_compaction_or_summary():
     flagged = [*steady[:3], Call("s", 66_000, 800, ts=3.0, prefix_reset=True), *steady[4:]]
     shrunk = [*steady[:3], Call("s", 20_000, 800, ts=3.0), *steady[4:]]
     assert reprice(steady, prices).cold_calls == 1
-    assert reprice(flagged, prices).cold_calls == 2
-    assert reprice(shrunk, prices).cold_calls == 2
+    assert reprice(flagged, prices).cold_calls == 2 and reprice(flagged, prices).resets == 1
+    assert reprice(shrunk, prices).cold_calls == 2 and reprice(shrunk, prices).resets == 1
+    assert reprice(steady, prices).resets == 0 and 0 < reprice(steady, prices).read_cost < reprice(steady, prices).cache_aware
     assert reprice(flagged, prices).cache_aware > reprice(steady, prices).cache_aware
     b = reprice(steady, prices, OBLIVIOUS)
     assert b.cache_aware == pytest.approx(b.cache_oblivious)

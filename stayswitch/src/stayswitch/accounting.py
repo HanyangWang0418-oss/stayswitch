@@ -47,6 +47,8 @@ class Bill:
     cache_oblivious: float    # every prompt token at the plain input price (how most routing papers count)
     switches: int
     cold_calls: int           # calls that read nothing from cache
+    read_cost: float = 0.0    # the part of cache_aware paid for cache reads
+    resets: int = 0           # calls where the history had been rewritten (flagged, or the prompt shrank)
 
 
 def reprice(
@@ -56,20 +58,22 @@ def reprice(
     sem = semantics or CacheSemantics(ttl_s=ttl_s)
     model = CostModel(prices, sem)
     ledger = CacheLedger()
-    aware = oblivious = 0.0
-    switches = cold = 0
+    aware = oblivious = read_cost = 0.0
+    switches = cold = resets = 0
     prev_model: str | None = None
     for call in calls:
-        if call.prefix_reset:
+        if call.prefix_reset or (ledger.entries and call.prompt_tokens < ledger.longest()):
             ledger.entries.clear()
+            resets += 1
         prefix = ledger.cached_prefix(call.model, call.prompt_tokens, call.ts, sem)
         if prefix == 0:
             cold += 1
         aware += model.call_cost(call.model, call.prompt_tokens, call.output_tokens, prefix)
+        read_cost += prefix * model.price(call.model).cache_read / PER_M
         price = prices[call.model]
         oblivious += (call.prompt_tokens * price.input + call.output_tokens * price.output) / PER_M
         if prev_model is not None and prev_model != call.model:
             switches += 1
         ledger.record(call.model, call.prompt_tokens, call.ts)
         prev_model = call.model
-    return Bill(aware, oblivious, switches, cold)
+    return Bill(aware, oblivious, switches, cold, read_cost, resets)

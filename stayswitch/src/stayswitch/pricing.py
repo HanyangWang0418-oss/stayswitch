@@ -99,3 +99,6 @@ class PriceTable:
 
     def __contains__(self, model: str) -> bool:
         return model in self._prices
+
+    def names(self) -> list[str]:
+        return list(self._prices)
