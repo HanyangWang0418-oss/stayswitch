@@ -1,0 +1,40 @@
+django__django-13406  # <15 min fix  0.96
+pytest-dev__pytest-5262  # <15 min fix  0.72
+django__django-14792  # <15 min fix  0.99
+psf__requests-5414  # <15 min fix  0.71
+django__django-11119  # <15 min fix  0.96
+sphinx-doc__sphinx-7462  # <15 min fix  0.82
+sphinx-doc__sphinx-9230  # <15 min fix  0.82
+sphinx-doc__sphinx-9698  # <15 min fix  0.82
+sympy__sympy-15345  # <15 min fix  0.90
+sympy__sympy-19495  # <15 min fix  0.90
+sympy__sympy-20428  # 15 min - 1 hour  0.90
+pylint-dev__pylint-7080  # 15 min - 1 hour  0.74
+astropy__astropy-14539  # 15 min - 1 hour  0.90
+psf__requests-2931  # 15 min - 1 hour  0.70
+pytest-dev__pytest-7571  # 15 min - 1 hour  0.72
+astropy__astropy-14182  # 15 min - 1 hour  0.90
+mwaskom__seaborn-3187  # 15 min - 1 hour  0.85
+astropy__astropy-13977  # 15 min - 1 hour  0.90
+pytest-dev__pytest-5631  # 15 min - 1 hour  0.72
+astropy__astropy-14365  # 15 min - 1 hour  0.90  0.01
+astropy__astropy-14508  # 15 min - 1 hour  0.90  0.01
+astropy__astropy-14598  # 15 min - 1 hour  0.90  0.01
+django__django-10914  # <15 min fix  0.96  0.01
+django__django-10973  # 15 min - 1 hour  0.96  0.01
+django__django-10999  # <15 min fix  0.96  0.01
+mwaskom__seaborn-3069  # 15 min - 1 hour  0.85  0.01
+psf__requests-1142  # <15 min fix  0.70  0.00
+psf__requests-1724  # <15 min fix  0.70  0.00
+psf__requests-1766  # <15 min fix  0.70  0.00
+psf__requests-1921  # <15 min fix  0.70  0.00
+pylint-dev__pylint-6903  # <15 min fix  0.74  0.00
+pylint-dev__pylint-7277  # <15 min fix  0.74  0.00
+pytest-dev__pytest-5840  # 15 min - 1 hour  0.72  0.00
+pytest-dev__pytest-6202  # <15 min fix  0.72  0.00
+pytest-dev__pytest-7490  # 15 min - 1 hour  0.72  0.00
+sphinx-doc__sphinx-8551  # 15 min - 1 hour  0.82  0.03
+sphinx-doc__sphinx-8638  # 15 min - 1 hour  0.82  0.03
+sympy__sympy-11618  # 15 min - 1 hour  0.90  0.00
+sympy__sympy-12096  # <15 min fix  0.90  0.00
+sympy__sympy-12419  # 15 min - 1 hour  0.90  0.00
