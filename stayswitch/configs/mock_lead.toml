@@ -1,0 +1,21 @@
+# SWE-bench Verified pilot: swe_strong_lead
+[run]
+id = "mock_lead"
+
+[policy]
+kind = "strong_lead"   # StaySwitch v0 heuristic
+weak = "mock-weak"
+strong = "mock-strong"
+lead_max = 2
+fail_streak = 3
+commit = 8
+
+[budget]
+per_session_usd = 3.0
+total_usd = 98.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/mock_lead/calls.jsonl"

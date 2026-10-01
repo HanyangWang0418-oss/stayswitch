@@ -1,0 +1,12 @@
+[run]
+id = "mock_ctx"
+[policy]
+kind = "fixed"
+model = "mock-strong"
+[context]
+keep = 2
+chunk = 2
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/mock_ctx/calls.jsonl"

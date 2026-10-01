@@ -1,0 +1,14 @@
+[run]
+id = "mock_cc"
+[policy]
+kind = "fixed"
+model = "mock-strong"
+[context]
+mode = "eoq"
+keep = 2
+extra_steps = 2
+ceiling = 60
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/mock_cc/calls.jsonl"

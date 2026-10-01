@@ -269,6 +269,16 @@ wheels = [
 ]
 
 [[package]]
+name = "cliffcompaction"
+version = "0.1.0"
+source = { git = "https://github.com/nguyenvuthientrang/cliffcompaction?rev=b48d660ae3c1f6037094d6cfc6b5d9f5938a7957#b48d660ae3c1f6037094d6cfc6b5d9f5938a7957" }
+dependencies = [
+    { name = "httpx" },
+    { name = "starlette" },
+    { name = "uvicorn" },
+]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -1514,6 +1524,9 @@ version = "0.0.1"
 source = { editable = "." }
 
 [package.dev-dependencies]
+cliff = [
+    { name = "cliffcompaction" },
+]
 dev = [
     { name = "pytest" },
 ]
@@ -1527,6 +1540,7 @@ tinker = [
 [package.metadata]
 
 [package.metadata.requires-dev]
+cliff = [{ name = "cliffcompaction", git = "https://github.com/nguyenvuthientrang/cliffcompaction?rev=b48d660ae3c1f6037094d6cfc6b5d9f5938a7957" }]
 dev = [{ name = "pytest", specifier = ">=8" }]
 eval = [{ name = "harbor", specifier = "==0.23.0" }]
 tinker = [{ name = "tinker", specifier = ">=0.30.4" }]

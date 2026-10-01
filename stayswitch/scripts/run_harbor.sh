@@ -23,7 +23,7 @@ exec uv run harbor run \
   --dataset "$dataset" \
   --agent "${STAYSWITCH_AGENT:-stayswitch.agents:StaySwitchTerminus}" \
   --model openai/stayswitch \
-  --ak api_base=http://127.0.0.1:${STAYSWITCH_PORT:-4000} \
+  --ak "api_base=${STAYSWITCH_API_BASE:-http://127.0.0.1:${STAYSWITCH_PORT:-4000}}" \
   --ak "model_info={\"max_input_tokens\": ${STAYSWITCH_MAX_INPUT_TOKENS:-56000}, \"max_output_tokens\": 8192, \"input_cost_per_token\": 0, \"output_cost_per_token\": 0}" \
   --jobs-dir "$jobs" \
   --verifier-timeout-multiplier "${VERIFIER_TIMEOUT_MULT:-5}" \

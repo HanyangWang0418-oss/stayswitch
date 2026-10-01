@@ -26,6 +26,14 @@ model_list:
       extra_headers:
         User-Agent: stayswitch/0.1
 
+  - model_name: mid
+    litellm_params:
+      model: openai/Qwen/Qwen3.6-35B-A3B
+      api_base: https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1
+      api_key: os.environ/TINKER_API_KEY
+      extra_headers:
+        User-Agent: stayswitch/0.1
+
   # ---- Alt pool: DeepSeek V4 pro/flash via a private Anthropic-compatible gateway (GATEWAY_* in .env). Same family,
   # automatic prefix caching reported as cache_read_input_tokens, no cache-write premium. ----
   - model_name: ds-strong

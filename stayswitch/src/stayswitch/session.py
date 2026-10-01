@@ -77,6 +77,10 @@ class SessionStore:
                 self._sessions[session_id] = state
             return state
 
+    def peek(self, session_id: str) -> SessionState | None:
+        with self._lock:
+            return self._sessions.get(session_id)
+
     def advance(self, state: SessionState, model: str) -> None:
         """Record the routing decision; called before the model call so steps stay ordered."""
         with self._lock:

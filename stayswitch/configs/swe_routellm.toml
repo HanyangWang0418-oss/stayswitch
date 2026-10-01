@@ -1,0 +1,19 @@
+# SWE-bench Verified pilot: swe_routellm
+[run]
+id = "swe_routellm"
+
+[policy]
+kind = "routellm"   # B3: RouteLLM BERT router applied per step
+weak = "weak"
+strong = "strong"
+threshold = 0.5061   # median strong-win-rate over 861 prompts from swe_strong trajectories (~50% strong calls)
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_routellm/calls.jsonl"

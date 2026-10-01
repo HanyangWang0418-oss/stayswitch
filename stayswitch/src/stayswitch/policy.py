@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Mapping, Protocol
 
 from stayswitch.session import SessionState, messages_hash
+from stayswitch.signals import assistant_turns, keystrokes, observation_failed, repeated_action, step_kind
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,17 @@ class RandomSegmentPolicy:
             model = state.model
         state.extra["stayed"] = stayed + 1 if model == state.model else 1
         return Decision(model)
+
+
+class RandomStepPolicy:
+    """Baseline: each call independently goes to the weak model with probability ``p_weak``."""
+
+    def __init__(self, weak: str, strong: str, p_weak: float, seed: int = 0) -> None:
+        self.weak, self.strong, self.p_weak = weak, strong, p_weak
+        self._rng = random.Random(seed)
+
+    def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
+        return Decision(self.weak if self._rng.random() < self.p_weak else self.strong)
 
 
 @dataclass(frozen=True)
@@ -139,12 +151,113 @@ class ForkPolicy:
         return Decision(self.option_model if in_option else self.base_model, note="option" if in_option else "base")
 
 
+def _fail_streak(state: SessionState, messages: list[dict[str, Any]]) -> int:
+    """Consecutive calls whose incoming terminal output shows an error; kept across summaries."""
+    streak = state.extra.get("fail_streak", 0) + 1 if observation_failed(messages) else 0
+    state.extra["fail_streak"] = streak
+    return streak
+
+
+class WeakFirstPolicy:
+    """Explore with the cheap model for ``k`` calls, then hand off to the strong one for good.
+
+    The fixed-prefix form of SWE-Router (Son et al., 2026): their learned value
+    decides whether to escalate after the prefix; this baseline always does.
+    """
+
+    def __init__(self, weak: str, strong: str, k: int) -> None:
+        self.weak, self.strong, self.k = weak, strong, k
+
+    def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
+        return Decision(self.weak if state.step < self.k else self.strong)
+
+
+class TriggerEscalatePolicy:
+    """Cheap model by default; escalate permanently on a failure signal.
+
+    Heuristic stand-in for TACIT-Switch / ReDAct-style deferral: escalate after
+    ``fail_streak`` consecutive failing observations, a repeated action, or
+    ``max_weak_steps`` calls on the cheap model.
+    """
+
+    def __init__(self, weak: str, strong: str, fail_streak: int = 3, max_weak_steps: int | None = 40) -> None:
+        self.weak, self.strong = weak, strong
+        self.fail_streak, self.max_weak_steps = fail_streak, max_weak_steps
+
+    def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
+        streak = _fail_streak(state, messages)
+        if not state.extra.get("escalated"):
+            reason = (
+                "fail_streak" if streak >= self.fail_streak
+                else "repeat" if repeated_action(messages)
+                else "max_weak" if self.max_weak_steps is not None and state.step >= self.max_weak_steps
+                else None
+            )
+            if reason:
+                state.extra["escalated"] = reason
+        return Decision(self.strong if state.extra.get("escalated") else self.weak, note=state.extra.get("escalated") or "")
+
+
+class StrongLeadPolicy:
+    """StaySwitch v0 heuristic: the strong model localises and makes the first fix,
+    the cheap model verifies and iterates, and trouble brings the strong model back
+    for a committed segment.
+
+    Phases: ``lead`` (strong) until an edit has been made and a test run has
+    followed it, or ``lead_max`` calls; then ``follow`` (weak). In ``follow``, a
+    failure signal (``fail_streak`` failing observations or a repeated action)
+    switches to strong for ``commit`` calls before returning to weak.
+    """
+
+    def __init__(self, weak: str, strong: str, lead_max: int = 30, fail_streak: int = 3, commit: int = 8) -> None:
+        self.weak, self.strong = weak, strong
+        self.lead_max, self.fail_streak, self.commit = lead_max, fail_streak, commit
+
+    def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
+        x = state.extra
+        streak = _fail_streak(state, messages)
+        turns = assistant_turns(messages)
+        last_kind = step_kind(keystrokes(turns[-1])) if turns else "empty"
+        if last_kind == "edit":
+            x["edited"] = True
+        elif last_kind == "test" and x.get("edited"):
+            x["tested_after_edit"] = True
+
+        if x.get("phase", "lead") == "lead":
+            if x.get("tested_after_edit") or state.step >= self.lead_max:
+                x["phase"] = "follow"
+            else:
+                return Decision(self.strong, note="lead")
+
+        until = x.get("strong_until", -1)
+        if state.step < until:
+            return Decision(self.strong, note="rescue")
+        if streak >= self.fail_streak or repeated_action(messages):
+            x["strong_until"] = state.step + self.commit
+            x["fail_streak"] = 0
+            x["rescues"] = x.get("rescues", 0) + 1
+            return Decision(self.strong, note="rescue")
+        return Decision(self.weak, note="follow")
+
+
 def build_policy(cfg: Mapping[str, Any]) -> Policy:
     kind = cfg["kind"]
     if kind == "fixed":
         return FixedPolicy(cfg["model"])
     if kind == "random_segment":
         return RandomSegmentPolicy(cfg["models"], cfg["p_switch"], cfg.get("min_stay", 1), cfg.get("seed", 0))
+    if kind == "random_step":
+        return RandomStepPolicy(cfg["weak"], cfg["strong"], cfg["p_weak"], cfg.get("seed", 0))
+    if kind == "weak_first":
+        return WeakFirstPolicy(cfg["weak"], cfg["strong"], cfg["k"])
+    if kind == "trigger_escalate":
+        return TriggerEscalatePolicy(cfg["weak"], cfg["strong"], cfg.get("fail_streak", 3), cfg.get("max_weak_steps", 40))
+    if kind == "strong_lead":
+        return StrongLeadPolicy(cfg["weak"], cfg["strong"], cfg.get("lead_max", 30), cfg.get("fail_streak", 3), cfg.get("commit", 8))
+    if kind == "routellm":
+        from stayswitch.routellm_router import RouteLLMPolicy  # heavy deps (torch); only the proxy env needs them
+
+        return RouteLLMPolicy(cfg["weak"], cfg["strong"], cfg["threshold"], cfg.get("checkpoint", "routellm/bert_gpt4_augmented"))
     if kind == "fork":
         sessions = cfg.get("source_sessions")
         bank = TraceBank.from_call_log(cfg["source_log"], session_ids=set(sessions) if sessions else None)

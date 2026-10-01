@@ -154,3 +154,146 @@ def test_budget_per_session_and_total(tmp_path):
     assert "trajectory" in b.exhausted("a") and b.exhausted("b") is None
     b.charge("b", 0.5)  # total 3.6
     assert "total" in b.exhausted("b")
+
+
+def _terminus_turn(keys: str) -> dict:
+    return {"role": "assistant", "content": json.dumps({"analysis": "", "plan": "", "commands": [{"keystrokes": keys}]})}
+
+
+def test_signals_step_kind_and_failures():
+    from stayswitch.signals import observation_failed, repeated_action, step_kind
+
+    assert step_kind("grep -rn foo src/\n") == "explore"
+    assert step_kind("sed -i 's/a/b/' x.py\n") == "edit"
+    assert step_kind("python -m pytest tests/test_x.py\n") == "test"
+    msgs = [{"role": "user", "content": "task"}, _terminus_turn("ls\n"), {"role": "user", "content": "Traceback (most recent call last):"}]
+    assert observation_failed(msgs)
+    msgs2 = msgs + [_terminus_turn("ls\n"), {"role": "user", "content": "ok"}]
+    assert repeated_action(msgs2) and not observation_failed(msgs2)
+
+
+def _drive_msgs(policy, turns):
+    """turns: list of (keystrokes of the previous assistant turn, observation)."""
+    store = SessionStore()
+    msgs = [{"role": "user", "content": "fix the bug"}]
+    out = []
+    for keys, obs in [(None, None)] + turns:
+        if keys is not None:
+            msgs = msgs + [_terminus_turn(keys), {"role": "user", "content": obs}]
+        state = store.get("s", msgs)
+        d = policy.decide(state, msgs)
+        store.advance(state, d.model)
+        out.append(d.model)
+    return out
+
+
+def test_weak_first_and_trigger_escalate():
+    from stayswitch.policy import TriggerEscalatePolicy, WeakFirstPolicy
+
+    assert _drive_msgs(WeakFirstPolicy("w", "s", 2), [("ls\n", "ok")] * 3) == ["w", "w", "s", "s"]
+    p = TriggerEscalatePolicy("w", "s", fail_streak=2, max_weak_steps=None)
+    got = _drive_msgs(p, [("ls\n", "ok"), ("cat a\n", "Error: x"), ("cat b\n", "Error: y"), ("ls -l\n", "ok")])
+    assert got == ["w", "w", "w", "s", "s"]
+
+
+def test_strong_lead_phases_and_rescue():
+    from stayswitch.policy import StrongLeadPolicy
+
+    p = StrongLeadPolicy("w", "s", lead_max=50, fail_streak=2, commit=2)
+    turns = [
+        ("grep -rn bug src\n", "src/a.py:3"),
+        ("sed -i 's/x/y/' src/a.py\n", ""),
+        ("python -m pytest -q\n", "1 passed"),  # edit then test: lead ends after this observation
+        ("git diff\n", "diff"),
+        ("python -m pytest -q\n", "1 failed"),
+        ("python -m pytest -q -x\n", "2 failed"),  # two failing observations: rescue for 2 calls
+        ("cat src/a.py\n", "ok"),
+        ("ls\n", "ok"),
+    ]
+    assert _drive_msgs(p, turns) == ["s", "s", "s", "w", "w", "w", "s", "s", "w"]
+
+
+def _conv_turns(n):
+    msgs = [{"role": "user", "content": "task"}]
+    for i in range(n):
+        msgs += [{"role": "assistant", "content": f"a{i}"}, {"role": "user", "content": f"o{i}"}]
+    return msgs
+
+
+def test_evict_chunked_keeps_prefix_stable_within_a_block():
+    from stayswitch.context import ELISION_NOTE, evict
+
+    assert evict(_conv_turns(5), keep=4, chunk=3) == (_conv_turns(5), 0)  # excess 1 < chunk
+    sent, dropped = evict(_conv_turns(7), keep=4, chunk=3)  # excess 3 -> drop 3
+    assert dropped == 3 and sent[0]["content"] == "task" + ELISION_NOTE and sent[1]["content"] == "a3"
+    # Two more turns: still the same cut, so the sent prefix is unchanged (cache-friendly).
+    sent9, d9 = evict(_conv_turns(9), keep=4, chunk=3)
+    assert d9 == 3 and sent9[: len(sent)] == sent
+    assert evict(_conv_turns(10), keep=4, chunk=3)[1] == 6
+
+
+def test_evict_sliding_window_moves_every_turn():
+    from stayswitch.context import evict
+
+    assert [evict(_conv_turns(n), keep=4, chunk=1)[1] for n in (4, 5, 6)] == [0, 1, 2]
+    sent, _ = evict(_conv_turns(6), keep=4, chunk=1)
+    assert [m["content"] for m in sent if m["role"] == "assistant"] == ["a2", "a3", "a4", "a5"]
+
+
+def _long_conv(n, obs_chars=3500):
+    msgs = [{"role": "user", "content": "task " * 200}]
+    for i in range(n):
+        msgs += [{"role": "assistant", "content": f"a{i} " * 50}, {"role": "user", "content": f"o{i}" + "x" * obs_chars}]
+    return msgs
+
+
+def test_compactor_truncates_once_at_budget_then_holds_the_cut():
+    from stayswitch.context import Compactor, fixed_threshold
+
+    c, x = Compactor(keep=3, threshold=fixed_threshold(9000)), {}
+    sizes, cuts = [], []
+    for n in range(1, 16):
+        sent, info = c.view(_long_conv(n), x)
+        sizes.append(info["est_tokens"]); cuts.append(info["cut"])
+    assert max(sizes) < 9000 + 1200          # never far above the budget
+    assert cuts == sorted(cuts)               # the cut only moves forward
+    assert x["compactions"] >= 2 and len(set(cuts)) == x["compactions"] + 1
+    # Between compactions the sent prefix is unchanged, so the cache prefix survives.
+    first = cuts.index(cuts[-1])
+    a, _ = c.view(_long_conv(first + 1), dict(x, cut=cuts[-1], prev_tokens=None))
+    b, _ = c.view(_long_conv(first + 2), dict(x, cut=cuts[-1], prev_tokens=None))
+    assert b[: len(a) - 1] == a[:-1]
+
+
+def test_compactor_resets_when_harness_rewrites_history():
+    from stayswitch.context import Compactor, fixed_threshold
+
+    c, x = Compactor(keep=2, threshold=fixed_threshold(3000)), {}
+    for n in range(1, 10):
+        c.view(_long_conv(n), x)
+    assert x["cut"] > 2
+    sent, info = c.view(_long_conv(1), x)  # e.g. the agent's own summariser restarted the chat
+    assert info["cut"] == 0 and len(sent) == 3
+
+
+def test_eoq_threshold_scales_with_sqrt_of_growth_and_read_price():
+    from stayswitch.context import eoq_threshold
+
+    strong = Price.from_mapping({"input": 3.0, "output": 7.5, "cache_read": 0.6, "cache_write": 3.0})
+    cheap_read = Price.from_mapping({"input": 3.0, "output": 7.5, "cache_read": 0.3, "cache_write": 3.0})
+    t = eoq_threshold(strong, extra_steps=2, ceiling=10**9)
+    l0 = 6000
+    base = t({"growth": 1000}, 0, l0) - l0
+    assert 9000 < base + l0 < 30000
+    # sqrt(g) law, a little steeper because C itself includes the new input of a redone step
+    assert 2.0 <= (t({"growth": 4000}, 0, l0) - l0) / base <= 2.6
+    assert eoq_threshold(cheap_read, extra_steps=2, ceiling=10**9)({"growth": 1000}, 0, l0) > base + l0
+
+
+def test_compactor_does_not_thrash_when_kept_turns_exceed_threshold():
+    from stayswitch.context import Compactor, fixed_threshold
+
+    c, x = Compactor(keep=2, threshold=fixed_threshold(100)), {}
+    for n in range(1, 12):
+        c.view(_long_conv(n), x)
+    assert x["compactions"] <= 5  # not one per call

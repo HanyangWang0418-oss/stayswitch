@@ -1,0 +1,21 @@
+# SWE-bench Verified: always strong, proxy-side history eviction (sliding window: sends 12 turns)
+[run]
+id = "swe_ctx_slide"
+
+[policy]
+kind = "fixed"
+model = "strong"
+
+[context]
+keep = 12     # minimum assistant turns kept after the task head
+chunk = 1    # turns evicted at once; prefix stays stable for this many calls
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_ctx_slide/calls.jsonl"

@@ -1,0 +1,20 @@
+# SWE-bench Verified pilot: swe_random
+[run]
+id = "swe_random"
+
+[policy]
+kind = "random_step"   # B2: independent per-step choice
+weak = "weak"
+strong = "strong"
+p_weak = 0.5   # TODO match the weak-call share of swe_strong_lead
+seed = 0
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_random/calls.jsonl"

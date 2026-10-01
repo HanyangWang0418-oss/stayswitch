@@ -1,0 +1,23 @@
+# SWE-bench Verified: always strong, EOQ threshold L* = L0 + sqrt(2 g C / c_r), adapted per trajectory
+[run]
+id = "swe_eoq"
+
+[policy]
+kind = "fixed"
+model = "strong"
+
+[context]
+mode = "eoq"
+keep = 4
+extra_steps = 2   # assumed rework per compaction; to be measured
+ceiling = 52000
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_eoq/calls.jsonl"

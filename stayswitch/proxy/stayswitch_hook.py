@@ -21,7 +21,8 @@ from litellm.integrations.custom_logger import CustomLogger
 
 from stayswitch.budget import Budget
 from stayswitch.calllog import CallLog
-from stayswitch.policy import Decision, build_policy
+from stayswitch.context import Compactor, eoq_threshold, evict, fixed_threshold
+from stayswitch.policy import Decision, ForkPolicy, build_policy
 from stayswitch.pricing import PriceTable, Usage, cost
 from stayswitch.session import SessionStore, fallback_session_id, messages_hash
 
@@ -76,6 +77,7 @@ class StaySwitchRouter(CustomLogger):
         self.run_id = cfg.get("run", {}).get("id", "")
         self.sessions = SessionStore()
         self.budget = Budget.from_config(cfg.get("budget", {}), config_dir=cfg["_dir"])
+        self.context = cfg.get("context")  # {"keep": N, "chunk": K} enables proxy-side history eviction
 
     async def async_pre_call_hook(self, user_api_key_dict, cache, data: dict, call_type):
         if data.get("model") != VIRTUAL_MODEL:
@@ -92,7 +94,13 @@ class StaySwitchRouter(CustomLogger):
         step = state.step
         # Summarisation calls carry derived ids; they draw on their trajectory's budget.
         stop_reason = self.budget.exhausted(sid.split("-summarization-", 1)[0])
-        decision = self.policy.decide(state, messages)
+        parent = self.sessions.peek(sid.split("-summarization-", 1)[0]) if "-summarization-" in sid else None
+        if parent is not None and parent.model is not None and not isinstance(self.policy, ForkPolicy):
+            # Terminus-2's context summaries run under a derived session id; they belong to the
+            # trajectory, so they use whatever model the trajectory is on instead of a fresh decision.
+            decision = Decision(parent.model, note="summary")
+        else:
+            decision = self.policy.decide(state, messages)
         if stop_reason is not None:
             decision = Decision(state.model or decision.model, replay=self.budget.stop_response, note="budget_stop")
         prev_model = state.model
@@ -101,6 +109,24 @@ class StaySwitchRouter(CustomLogger):
         data["model"] = decision.model
         if decision.replay is not None:
             data["mock_response"] = decision.replay
+        ctx_dropped, ctx_info = 0, {}
+        if self.context and decision.replay is None and parent is None and "-summarization-" not in sid:
+            mode = self.context.get("mode", "evict")
+            if mode == "evict":
+                data["messages"], ctx_dropped = evict(messages, self.context["keep"], self.context.get("chunk", 1))
+            else:
+                if mode == "budget":
+                    threshold = fixed_threshold(self.context["budget"])
+                else:  # "eoq"
+                    threshold = eoq_threshold(
+                        self.prices[decision.model],
+                        extra_steps=self.context.get("extra_steps", 2.0),
+                        out_tokens=self.context.get("out_tokens", 900),
+                        ceiling=self.context.get("ceiling", 52000),
+                    )
+                compactor = Compactor(self.context.get("keep", 4), threshold, self.context.get("max_msg_chars", 24000))
+                data["messages"], ctx_info = compactor.view(messages, state.extra.setdefault("ctx", {}))
+                ctx_dropped = ctx_info["cut"]
         data.setdefault("metadata", {})["stayswitch"] = {
             "session_id": sid,
             "task": state.task,
@@ -114,6 +140,9 @@ class StaySwitchRouter(CustomLogger):
             "n_messages": len(messages),
             "diverged_at": state.diverged_at,
             "stop_reason": stop_reason,
+            "ctx_dropped_turns": ctx_dropped,
+            "ctx": ctx_info,
+            "n_messages_sent": len(data["messages"]),
         }
         return data
 

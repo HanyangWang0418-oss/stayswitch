@@ -12,6 +12,12 @@ output = 1.995
 cache_read = 0.132
 cache_write = 0.66
 
+[models.mid]      # Qwen/Qwen3.6-35B-A3B (cheaper per token than the 9B)
+input = 0.54
+output = 1.335
+cache_read = 0.108
+cache_write = 0.54
+
 # DeepSeek V4 via a private gateway. PROVISIONAL: weak = DeepSeek V3.2-era list price, strong = 4x.
 [models.ds-strong]
 input = 1.12

@@ -1,0 +1,9 @@
+[run]
+id = "mock_chain"
+[policy]
+kind = "fixed"
+model = "mock-strong"
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/mock_chain/calls.jsonl"

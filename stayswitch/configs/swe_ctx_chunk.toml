@@ -1,0 +1,21 @@
+# SWE-bench Verified: always strong, proxy-side history eviction (chunked: sends 8-15 turns)
+[run]
+id = "swe_ctx_chunk"
+
+[policy]
+kind = "fixed"
+model = "strong"
+
+[context]
+keep = 8     # minimum assistant turns kept after the task head
+chunk = 8    # turns evicted at once; prefix stays stable for this many calls
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_ctx_chunk/calls.jsonl"

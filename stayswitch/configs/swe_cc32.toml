@@ -1,0 +1,22 @@
+# SWE-bench Verified: always strong, CliffCompaction-style one-shot truncation at a fixed 32K budget
+[run]
+id = "swe_cc32"
+
+[policy]
+kind = "fixed"
+model = "strong"
+
+[context]
+mode = "budget"
+budget = 32000
+keep = 4
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_cc32/calls.jsonl"
