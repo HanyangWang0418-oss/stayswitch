@@ -8,7 +8,9 @@ logged. For every arm it reports resolve rate, calls per task, cost per task and
 model and the provider-metered one), cache hit rate, context size, and the number of prompt drops (compactions). Against
 the baseline, over tasks both finished, it reports paired differences and e_hat, the extra calls per compaction:
     e_hat = sum(calls_arm - calls_base) / sum(compactions_arm).
-Subagent calls (``~sub-`` ids) count toward cost but not toward the main trajectory's calls or compactions. Baseline logs
+When a task was rerun inside the same run id (an infrastructure failure, e.g. the agent OOM-killed), only its latest
+trial counts, as in summarize_runs.py. Subagent calls (``~sub-`` ids) count toward cost but not toward the main
+trajectory's calls or compactions. Baseline logs
 written before the subagent split lack those ids; for a run without compaction their subagent calls are separated by
 message-count continuity (the main conversation's message count only grows).
 """
@@ -27,14 +29,20 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def trial_index(run_id: str) -> dict[str, tuple[str, float | None, str]]:
-    """session id -> (task, reward, exception) for every finished trial of a run."""
-    out: dict[str, tuple[str, float | None, str]] = {}
+    """session id -> (task, reward, exception) for the latest finished trial of each task in a run."""
+    latest: dict[str, tuple[str, Path, float | None, str]] = {}
     for result in (ROOT / "jobs" / run_id).glob("*/*/result.json"):
         trial = result.parent
         data = json.loads(result.read_text())
         task = trial.name.rsplit("__", 1)[0]
+        started = data.get("started_at") or ""
+        if task in latest and latest[task][0] >= started:
+            continue
         reward = ((data.get("verifier_result") or {}).get("rewards") or {}).get("reward")
         exc = (data.get("exception_info") or {}).get("exception_type", "")
+        latest[task] = (started, trial, reward, exc)
+    out: dict[str, tuple[str, float | None, str]] = {}
+    for task, (_, trial, reward, exc) in latest.items():
         for f in trial.glob("agent/sessions/projects/*/*.jsonl"):
             out[f.stem] = (task, reward, exc)
     return out
