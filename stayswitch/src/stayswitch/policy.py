@@ -267,11 +267,22 @@ class StrongLeadPolicy:
     followed it, or ``lead_max`` calls; then ``follow`` (weak). In ``follow``, a
     failure signal (``fail_streak`` failing observations or a repeated action)
     switches to strong for ``commit`` calls before returning to weak.
+
+    The two switches go through ``handoff_ok`` (strong to weak) and ``rescue_ok``
+    (weak to strong), which always pass here; ``CostAwareStrongLeadPolicy`` prices them.
     """
 
     def __init__(self, weak: str, strong: str, lead_max: int = 30, fail_streak: int = 3, commit: int = 8) -> None:
         self.weak, self.strong = weak, strong
         self.lead_max, self.fail_streak, self.commit = lead_max, fail_streak, commit
+
+    def handoff_ok(self, state: SessionState, messages: list[dict[str, Any]]) -> bool:
+        """May the strong model hand the trajectory to the cheap one now?"""
+        return True
+
+    def rescue_ok(self, state: SessionState, messages: list[dict[str, Any]]) -> bool:
+        """May the cheap model call the strong one back now?"""
+        return True
 
     def decide(self, state: SessionState, messages: list[dict[str, Any]]) -> Decision:
         x = state.extra
@@ -289,15 +300,77 @@ class StrongLeadPolicy:
             else:
                 return Decision(self.strong, note="lead")
 
+        note = "follow"
         until = x.get("strong_until", -1)
         if state.step < until:
             return Decision(self.strong, note="rescue")
         if streak >= self.fail_streak or repeated_action(messages):
-            x["strong_until"] = state.step + self.commit
-            x["fail_streak"] = 0
-            x["rescues"] = x.get("rescues", 0) + 1
-            return Decision(self.strong, note="rescue")
-        return Decision(self.weak, note="follow")
+            # Already on the strong model (a held handoff): a rescue costs nothing extra.
+            if state.model == self.strong or self.rescue_ok(state, messages):
+                x["strong_until"] = state.step + self.commit
+                x["fail_streak"] = 0
+                x["rescues"] = x.get("rescues", 0) + 1
+                return Decision(self.strong, note="rescue")
+            note = "rescue_deferred"
+        if state.model == self.strong and not self.handoff_ok(state, messages):
+            x["holds"] = x.get("holds", 0) + 1
+            return Decision(self.strong, note="hold")
+        return Decision(self.weak, note=note)
+
+
+class CostAwareStrongLeadPolicy(StrongLeadPolicy):
+    """``strong_lead`` with both switches priced by the ``CostModel``.
+
+    * Handoff (strong to weak), at the end of the lead and after each rescue: only if a
+      weak segment of ``remaining_steps`` pays back the switch, i.e. the cold-cache premium
+      of the weak model plus the cost of eventually writing the segment back into the
+      strong model's cache (``breakeven_steps`` on the trajectory's ledger). Otherwise the
+      strong model holds and the question is asked again on the next call.
+    * Rescue (weak to strong): only if its extra cost, the strong model's cache premium
+      (usually just the follow segment, since its lead-phase prefix is still cached) plus
+      ``commit`` steps of price difference, does not exceed ``value_usd``, as in
+      ``cost_escalate``. A deferred rescue is re-priced on every later call.
+    """
+
+    def __init__(
+        self,
+        weak: str,
+        strong: str,
+        cost_model: CostModel,
+        *,
+        value_usd: float,
+        remaining_steps: int = 20,
+        out_tokens: int = 900,
+        lead_max: int = 30,
+        fail_streak: int = 3,
+        commit: int = 8,
+    ) -> None:
+        super().__init__(weak, strong, lead_max, fail_streak, commit)
+        self.cost_model, self.value_usd, self.remaining_steps, self.out_tokens = cost_model, value_usd, remaining_steps, out_tokens
+
+    def _kw(self, state: SessionState, messages: list[dict[str, Any]]) -> dict[str, int]:
+        ctx = state.ctx_tokens
+        new = est_tokens(messages[-2:]) if ctx else est_tokens(messages)
+        return dict(ctx_tokens=ctx, new_tokens=new, output_tokens=self.out_tokens)
+
+    def rescue_cost(self, state: SessionState, messages: list[dict[str, Any]]) -> float:
+        kw = self._kw(state, messages)
+        premium = self.cost_model.switch_premium(self.strong, state.cache, now=state.last_call_ts, **kw)
+        per_step = self.cost_model.step_cost(self.strong, **kw) - self.cost_model.step_cost(self.weak, **kw)
+        return premium + self.commit * per_step
+
+    def handoff_breakeven(self, state: SessionState, messages: list[dict[str, Any]]) -> float:
+        return self.cost_model.breakeven_steps(
+            self.strong, self.weak, ledger=state.cache, now=state.last_call_ts, **self._kw(state, messages)
+        )
+
+    def rescue_ok(self, state: SessionState, messages: list[dict[str, Any]]) -> bool:
+        extra = state.extra["rescue_cost"] = self.rescue_cost(state, messages)
+        return extra <= self.value_usd
+
+    def handoff_ok(self, state: SessionState, messages: list[dict[str, Any]]) -> bool:
+        steps = state.extra["handoff_breakeven"] = self.handoff_breakeven(state, messages)
+        return steps <= self.remaining_steps
 
 
 def build_policy(cfg: Mapping[str, Any], cost_model: CostModel | None = None) -> Policy:
@@ -322,6 +395,14 @@ def build_policy(cfg: Mapping[str, Any], cost_model: CostModel | None = None) ->
         )
     if kind == "strong_lead":
         return StrongLeadPolicy(cfg["weak"], cfg["strong"], cfg.get("lead_max", 30), cfg.get("fail_streak", 3), cfg.get("commit", 8))
+    if kind == "cost_lead":
+        if cost_model is None:
+            raise ValueError("cost_lead needs a CostModel (prices + [cache] semantics)")
+        return CostAwareStrongLeadPolicy(
+            cfg["weak"], cfg["strong"], cost_model,
+            value_usd=cfg["value_usd"], remaining_steps=cfg.get("remaining_steps", 20), out_tokens=cfg.get("out_tokens", 900),
+            lead_max=cfg.get("lead_max", 30), fail_streak=cfg.get("fail_streak", 3), commit=cfg.get("commit", 8),
+        )
     if kind == "routellm":
         from stayswitch.routellm_router import RouteLLMPolicy  # heavy deps (torch); only the proxy env needs them
 

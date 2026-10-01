@@ -229,6 +229,7 @@ path = "../runs/swe_cliff16/calls.jsonl"
 | `trigger_escalate` | `weak`, `strong`, `fail_streak`, `max_weak_steps` | 默认 weak;连续报错、重复动作或达到步数上限时永久升级(TACIT / ReDAct 风格) |
 | `cost_escalate` | 同上，加 `value_usd`, `remaining_steps`, `out_tokens` | 触发条件和 `trigger_escalate` 相同，但只有升级的额外花费(切到 strong 的冷缓存溢价 + `remaining_steps` × 两模型每步差价，按 `[cache]` 语义算)不超过 `value_usd` 才真的升级；太贵则继续用 weak，下一次调用再算。刚压缩或摘要过时溢价为零。扫 `value_usd` 得到成本 / 解决率曲线。`note` 记录 `cost=` 或 `too_expensive=` |
 | `strong_lead` | `weak`, `strong`, `lead_max`, `fail_streak`, `commit` | strong 定位并完成第一次修改，跑完测试后交给 weak;出问题时 strong 回来至少 `commit` 步 |
+| `cost_lead` | 同 `strong_lead`，加 `value_usd`, `remaining_steps`, `out_tokens` | `strong_lead` 的两个切换都过成本门：strong 交给 weak 前，先算切到 weak 并最终切回的回本步数，超过 `remaining_steps` 就留在 strong(`note=hold`)；weak 召回 strong 前，算 strong 的缓存溢价(lead 阶段的前缀通常还在，所以只补 follow 那一段)加 `commit` 步差价，超过 `value_usd` 就不召回(`note=rescue_deferred`)，下一次再算 |
 | `routellm` | `weak`, `strong`, `threshold`, `checkpoint` | RouteLLM BERT 路由器逐次打分;首次运行会从 HuggingFace 下载约 1.1GB 权重 |
 | `fork` | `source_log`, `fork_step`, `option_model`, `base_model`, `horizon`, `check_divergence`, `source_sessions` | 闭环分叉，见第 8 节 |
 

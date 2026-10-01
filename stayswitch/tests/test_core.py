@@ -414,7 +414,7 @@ def _drive_cost(policy, turns, ctx_tokens, *, reset_at=None):
         store.advance(state, d.model)
         store.observe("s", d.model, ctx_tokens, prefix_reset=(i == reset_at))
         out.append(d)
-    return out
+    return out, state
 
 
 def test_cost_escalate_gates_the_trigger_by_price():
@@ -429,7 +429,7 @@ def test_cost_escalate_gates_the_trigger_by_price():
 
     def run(value_usd, ctx, **kw):
         p = CostAwareEscalatePolicy("w", "s", cm, value_usd=value_usd, remaining_steps=10, fail_streak=2, max_weak_steps=None, **kw)
-        return _drive_cost(p, failing, ctx, **{k: v for k, v in kw.items() if k == "reset_at"})
+        return _drive_cost(p, failing, ctx, **{k: v for k, v in kw.items() if k == "reset_at"})[0]
 
     # A generous value escalates exactly where trigger_escalate would.
     rich = run(100.0, 20_000)
@@ -440,8 +440,8 @@ def test_cost_escalate_gates_the_trigger_by_price():
     # The gate is monotone in context size: the same value escalates at 5k tokens but not at 60k.
     p_small = CostAwareEscalatePolicy("w", "s", cm, value_usd=0.5, remaining_steps=10, fail_streak=2, max_weak_steps=None)
     p_large = CostAwareEscalatePolicy("w", "s", cm, value_usd=0.5, remaining_steps=10, fail_streak=2, max_weak_steps=None)
-    assert _drive_cost(p_small, failing, 5_000)[3].model == "s"
-    assert _drive_cost(p_large, failing, 60_000)[3].model == "w"
+    assert _drive_cost(p_small, failing, 5_000)[0][3].model == "s"
+    assert _drive_cost(p_large, failing, 60_000)[0][3].model == "w"
 
 
 def test_cost_escalate_switch_is_cheaper_right_after_a_compaction():
@@ -476,3 +476,76 @@ def test_build_policy_cost_escalate_requires_cost_model():
     with pytest.raises(ValueError):
         build_policy(cfg)
     assert build_policy(cfg, CostModel(PriceTable({"w": HAIKU, "s": OPUS}))).value_usd == 1.0
+
+
+LEAD_TURNS = [
+    ("grep -rn bug src\n", "src/a.py:3"),
+    ("sed -i 's/x/y/' src/a.py\n", ""),
+    ("python -m pytest -q\n", "1 passed"),  # edit then test: lead ends after this observation
+    ("git diff\n", "diff"),
+    ("python -m pytest -q\n", "1 failed"),
+    ("python -m pytest -q -x\n", "2 failed"),  # two failing observations: rescue for 2 calls
+    ("cat src/a.py\n", "ok"),
+    ("ls\n", "ok"),
+]
+
+
+def _cost_lead(value_usd, remaining_steps, ctx=40_000):
+    from stayswitch.cache import TINKER
+    from stayswitch.costmodel import CostModel
+    from stayswitch.policy import CostAwareStrongLeadPolicy
+    from stayswitch.pricing import PriceTable
+
+    cm = CostModel(PriceTable({"w": HAIKU, "s": OPUS}), TINKER)
+    p = CostAwareStrongLeadPolicy("w", "s", cm, value_usd=value_usd, remaining_steps=remaining_steps, lead_max=50, fail_streak=2, commit=2)
+    out, state = _drive_cost(p, LEAD_TURNS, ctx)
+    return p, cm, out, state
+
+
+def test_cost_lead_matches_strong_lead_when_money_is_no_object():
+    _, _, out, _ = _cost_lead(value_usd=100.0, remaining_steps=1000)
+    assert [d.model for d in out] == ["s", "s", "s", "w", "w", "w", "s", "s", "w"]
+    assert [d.note for d in out][3:] == ["follow", "follow", "follow", "rescue", "rescue", "follow"]
+
+
+def test_cost_lead_defers_a_rescue_it_cannot_afford():
+    _, _, out, state = _cost_lead(value_usd=0.0, remaining_steps=1000)
+    assert [d.model for d in out] == ["s", "s", "s"] + ["w"] * 6
+    assert out[6].note == "rescue_deferred" and state.extra.get("rescues", 0) == 0
+
+
+def test_cost_lead_holds_the_strong_model_when_a_handoff_cannot_pay_back():
+    _, _, out, state = _cost_lead(value_usd=100.0, remaining_steps=0)
+    assert [d.model for d in out] == ["s"] * 9
+    assert out[3].note == "hold" and state.extra["holds"] == 4  # steps 3-5 and 8; 6-7 are the rescue
+    # Trouble while holding needs no rescue: the strong model is already there.
+    assert state.extra.get("rescues", 0) == 1 and out[6].note == "rescue"
+
+
+def test_cost_lead_rescue_is_cheap_because_the_lead_prefix_is_still_cached():
+    from stayswitch.cache import CacheLedger
+
+    p, cm, out, state = _cost_lead(value_usd=100.0, remaining_steps=1000)
+    from stayswitch.context import est_tokens
+
+    keys, obs = LEAD_TURNS[5]  # the last turn before the rescue decision
+    kw = dict(ctx_tokens=40_000, new_tokens=est_tokens([_terminus_turn(keys), {"role": "user", "content": obs}]), output_tokens=900)
+    per_step = cm.step_cost("s", **kw) - cm.step_cost("w", **kw)
+    # The strong model's prefix survived the weak segment (persistent cache): no premium, only the committed steps.
+    assert state.extra["rescue_cost"] == pytest.approx(p.commit * per_step)
+    cold = cm.switch_premium("s", CacheLedger(), **kw) + p.commit * per_step
+    assert cold > state.extra["rescue_cost"] * 2
+    # And the handoff break-even on Tinker prices is about a step, which is why the base heuristic works there.
+    assert state.extra["handoff_breakeven"] < 2
+
+
+def test_build_policy_cost_lead():
+    from stayswitch.costmodel import CostModel
+    from stayswitch.policy import CostAwareStrongLeadPolicy, build_policy
+    from stayswitch.pricing import PriceTable
+
+    cfg = {"kind": "cost_lead", "weak": "w", "strong": "s", "value_usd": 0.5, "commit": 4}
+    with pytest.raises(ValueError):
+        build_policy(cfg)
+    p = build_policy(cfg, CostModel(PriceTable({"w": HAIKU, "s": OPUS})))
+    assert isinstance(p, CostAwareStrongLeadPolicy) and p.commit == 4 and p.value_usd == 0.5

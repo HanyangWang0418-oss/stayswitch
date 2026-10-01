@@ -1,0 +1,27 @@
+# SWE-bench Verified pilot: swe_cost_lead
+[run]
+id = "swe_cost_lead"
+
+[policy]
+kind = "cost_lead"       # strong_lead with both switches priced: hand off only if the weak segment pays back, rescue only if affordable
+weak = "weak"
+strong = "strong"
+lead_max = 30
+fail_streak = 3
+commit = 8
+value_usd = 0.6          # ceiling on a rescue's extra cost (strong's cache premium + commit steps of price difference); sweep it
+remaining_steps = 20     # L-hat prior: a handoff must pay back within this many weak steps
+out_tokens = 900
+
+[cache]
+preset = "tinker"
+
+[budget]
+per_session_usd = 3.0
+total_usd = 245.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/swe_cost_lead/calls.jsonl"

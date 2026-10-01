@@ -76,17 +76,21 @@ class CostModel:
         permanent: bool = False,
         gap_s: float = 0.0,
         now: float | None = None,
+        ledger: CacheLedger | None = None,
     ) -> float:
         """Steps ``to_model`` must run, at constant context, for its per-step saving to repay the switch.
 
         ``permanent=False`` also charges the return to ``from_model`` after those steps
         (``return_premium`` on the segment run away, with ``gap_s`` away). ``inf`` means
-        the switch never pays for itself. The proposal's observation-A table is this
-        function with ``gap_s`` beyond the TTL; section 11's correction is ``gap_s=0``
-        under a persistent cache.
+        the switch never pays for itself. Without ``ledger`` the switch is priced from a
+        state where ``from_model`` holds the whole context and ``to_model`` is cold; pass a
+        trajectory's ledger to price it from what is really cached. The proposal's
+        observation-A table is this function with ``gap_s`` beyond the TTL; section 11's
+        correction is ``gap_s=0`` under a persistent cache.
         """
-        ledger = CacheLedger()
-        ledger.record(from_model, ctx_tokens, now)
+        if ledger is None:
+            ledger = CacheLedger()
+            ledger.record(from_model, ctx_tokens, now)
         premium = self.switch_premium(to_model, ledger, ctx_tokens=ctx_tokens, new_tokens=new_tokens, output_tokens=output_tokens, now=now)
         saving = self.step_cost(from_model, ctx_tokens=ctx_tokens, new_tokens=new_tokens, output_tokens=output_tokens) - self.step_cost(
             to_model, ctx_tokens=ctx_tokens, new_tokens=new_tokens, output_tokens=output_tokens
