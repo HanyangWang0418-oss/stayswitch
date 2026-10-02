@@ -1,0 +1,17 @@
+# 397B replication of the Claude Code compaction arms (model-transfer check), 40 tasks, seed 1.
+[run]
+id = "cc_strong_eoq3"
+
+[policy]
+kind = "fixed"
+model = "strong"
+
+[budget]
+per_session_usd = 3.0   # runaway loops end here; same rule for every policy
+total_usd = 700.0
+
+[prices]
+path = "prices.toml"
+
+[log]
+path = "../runs/cc_strong_eoq3/calls.jsonl"

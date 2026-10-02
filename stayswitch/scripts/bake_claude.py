@@ -30,12 +30,24 @@ def sh(*cmd: str, check: bool = True, stdin: str | None = None) -> subprocess.Co
     return subprocess.run(cmd, check=check, text=True, capture_output=True, input=stdin)
 
 
+TB_DIR = Path.home() / ".cache" / "harbor" / "tasks" / "packages" / "terminal-bench"
+
+
 def base_tag(task: str) -> str:
-    return "swebench/sweb.eval.x86_64." + task.replace("__", "_1776_") + ":latest"
+    """The image Harbor runs for a task: SWE-bench tasks build FROM the swebench tag; Terminal-Bench tasks name a
+    prebuilt image in task.toml (built locally by scripts/prebuild_images.py under that same tag)."""
+    if "__" in task:
+        return "swebench/sweb.eval.x86_64." + task.replace("__", "_1776_") + ":latest"
+    import tomllib
+
+    for toml in TB_DIR.glob(f"{task}/*/task.toml"):
+        with open(toml, "rb") as f:
+            return tomllib.load(f)["environment"]["docker_image"]
+    raise SystemExit(f"no task.toml for {task}")
 
 
 def backup_tag(task: str) -> str:
-    return f"stayswitch-orig/{task}:latest"
+    return f"stayswitch-orig/{task}:latest"  # one backup per task name, whichever dataset
 
 
 def exists(tag: str) -> bool:
