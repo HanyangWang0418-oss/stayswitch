@@ -447,3 +447,12 @@ def test_eoq_v3_uses_history_growth_and_measured_l0():
     assert v3.threshold("k", head=18000, mean_growth=1250)[0] > v2.threshold("k", head=18000, mean_growth=1250)[0]
     v3.observe("k", est_out=26000, compacted=True)
     assert v3.threshold("k", head=18000, mean_growth=1250)[1]["l0"] == 26000  # measured post-compaction size kept
+
+
+def test_failure_override_fires_on_streak_or_loop_but_not_too_often():
+    from stayswitch.eoq_trigger import failure_override
+
+    assert failure_override(fail_streak=3, repeated=False, cycle_calls=4, min_gap=4)
+    assert failure_override(fail_streak=0, repeated=True, cycle_calls=4, min_gap=4)
+    assert not failure_override(fail_streak=2, repeated=False, cycle_calls=9, min_gap=4)
+    assert not failure_override(fail_streak=5, repeated=True, cycle_calls=2, min_gap=4)  # just compacted

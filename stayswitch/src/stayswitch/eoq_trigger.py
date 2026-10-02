@@ -81,3 +81,16 @@ class EOQTrigger:
         s.cycle_calls += 1
         if est_out > s.cycle_start:
             s.growth = (est_out - s.cycle_start) / s.cycle_calls
+
+
+def failure_override(*, fail_streak: int, repeated: bool, cycle_calls: int, min_gap: int, streak: int = 3) -> bool:
+    """Compact now, keeping only the last turn, when the trajectory is failing or looping.
+
+    The EOQ trigger decides *when* a compaction pays for itself on cost alone. Our Claude Code runs show that compaction
+    also raises the resolve rate, and the action mix says why: the agent re-reads sources instead of acting on stale
+    failed attempts. So a failure streak (``streak`` consecutive failing observations) or a repeated tool call is a
+    second trigger: compact early and drop the bloated error output of the failed turns themselves, which a normal
+    compaction would keep verbatim (CliffCompaction keeps the last K turns). At most once per ``min_gap`` calls, so a
+    trajectory that keeps failing does not compact on every call.
+    """
+    return (fail_streak >= streak or repeated) and cycle_calls >= min_gap

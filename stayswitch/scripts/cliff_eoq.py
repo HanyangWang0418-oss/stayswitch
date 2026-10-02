@@ -70,7 +70,10 @@ def install(model: str, extra_steps: float, log_path: Path, ceiling: int, min_ga
 
 
 def install_v2(price, extra_steps: float, log_path: Path, ceiling: int, min_gap: int, original, growth: str = "cycle") -> None:
-    from stayswitch.eoq_trigger import EOQTrigger
+    from stayswitch.eoq_trigger import EOQTrigger, failure_override
+    from stayswitch.signals import observation_failed, repeated_action
+
+    failure_mode = os.environ.get("EOQ_FAILURE_TRIGGER") == "1"  # v3f: also compact on failure streaks / loops
 
     trigger = EOQTrigger(price, extra_steps=extra_steps, keep_recent=3, min_gap=min_gap, ceiling=ceiling, growth=growth)
 
@@ -84,8 +87,19 @@ def install_v2(price, extra_steps: float, log_path: Path, ceiling: int, min_gap:
         key = dialect.digest_message(msgs[0]) if msgs else ""  # the first message is fixed for a trajectory
         trigger.keep_recent = self.cfg.keep_recent
         threshold, info = trigger.threshold(key, head=head, mean_growth=mean_growth)
+        keep = trigger.keep_recent
+        if failure_mode:
+            st = trigger._get(key)
+            streak = st.__dict__.setdefault("fail_streak", 0)
+            streak = streak + 1 if observation_failed(msgs) else 0
+            st.__dict__["fail_streak"] = streak
+            if failure_override(fail_streak=streak, repeated=repeated_action(msgs), cycle_calls=st.cycle_calls, min_gap=trigger.min_gap):
+                threshold, keep = 0, 1  # compact now, keep only the last turn
+                info["failure_trigger"] = True
         self.cfg.threshold_tokens = threshold  # prepare() is synchronous: no interleaving
+        self.cfg.keep_recent = keep
         ctx = original(self, body, dialect)
+        self.cfg.keep_recent = trigger.keep_recent
         trigger.observe(key, est_out=ctx.est_tokens_out, compacted=bool(ctx.compacted))
         with open(log_path, "a") as f:
             f.write(json.dumps({
