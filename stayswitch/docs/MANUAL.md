@@ -8,22 +8,24 @@ StaySwitch 是一套研究 coding agent 成本的实验工具。它在 agent 和
 - 回放已有轨迹的前缀，从中间分叉(闭环分叉);
 - 按轨迹和总量设花费上限。
 
-任务通过 [Harbor](https://hub.harborframework.com) 运行(Terminal-Bench 2、SWE-bench Verified 等),agent 默认用 terminus-2。
+任务通过 [Harbor](https://hub.harborframework.com) 运行(Terminal-Bench 2、SWE-bench Verified 等)。支持两种 agent:terminus-2(OpenAI 格式)和 Claude Code(Anthropic 格式,`AGENT=cc`,见第 12 节)。
 
 ---
 
 ## 1. 整体结构
 
 ```
-agent (Harbor 里的 terminus-2)
-   │  OpenAI 格式请求，带 X-Session-ID
+agent:Harbor 里的 terminus-2(OpenAI /chat/completions,带 X-Session-ID)
+       或 Claude Code(Anthropic /v1/messages,带 x-claude-code-session-id)
    ▼
-[可选] CliffCompaction 官方 proxy   ← 只在 run_cliff.sh 里串联，负责压缩
+[可选] CliffCompaction 官方 proxy   ← 只在 run_cliff.sh 里串联，负责压缩;两种格式都支持
    ▼
 StaySwitch proxy (LiteLLM + stayswitch_hook)   ← 路由、压缩、记账、预算、回放
    ▼
 模型服务(Tinker / 私有网关 / mock)
 ```
+
+Claude Code 跑在任务容器里，通过 `host.docker.internal:<端口>` 访问本机的 proxy。
 
 | 路径 | 作用 |
 |---|---|
@@ -75,6 +77,8 @@ GATEWAY_LIMIT_PRICE=...
 | 容器里 apt 很慢 | 已自动处理：自定义 agent 启动前会把 apt 源换成清华镜像(`STAYSWITCH_APT_MIRROR`) |
 | 验证脚本从 GitHub 下载 uv 失败 | 已自动处理:`run_harbor.sh` 会在本机 8765 端口启动 `gh_release_cache.py`,容器通过它下载 |
 | npm 默认源是内网，连不上 | 临时加 `--registry https://registry.npmjs.org` |
+| **Docker 数据盘写满** | Harbor 每个 trial 都会在任务镜像上构建一层，build cache 会持续增长(一天就到过 72 GB,把 98 GB 的盘写满)。症状很隐蔽:apt 报 "invalid signature"(其实是 gpgv 写不了临时文件)、tmux 装不上、验证器找不到 reward 文件、甚至 agent 的改动静默丢失。检查:`colima ssh -- df -h /var/lib/docker`。清理只用 `docker builder prune -af` 和 `docker container prune -f`,**不要**删 `stayswitch-orig/*` 备份镜像。盘满期间跑过的 trial 要整批重跑 |
+| 一台机器同时跑几组实验 | 6 核 12 GB 下合计并发不超过 6 个容器;每组实验用独立的端口对(见 12.6),否则 proxy 会互相顶掉 |
 
 ---
 
@@ -122,6 +126,30 @@ uv run python scripts/swe_images.py pull data/swe-bench-verified -j 8    # 在�
 `pull` 调用 `scripts/fetch_image.py`:在本机用多连接、可断点续传的方式下载各层，按内容哈希去重缓存(`~/.cache/stayswitch/blobs`),然后 `docker load`。GHCR 很慢，直接 `docker pull` 会经常断线重来。同一仓库的任务共享底层，19 个任务去重后约 3.8 GB。
 
 `select` 的规则：在"<15 分钟"和"15 分钟到 1 小时"两档里各抽 `--n-per-bucket` 个(默认 10),每个仓库最多 3 个，排除体积最大的 1/4 镜像。
+
+扩充任务集(只从已有仓库里挑，按"还没缓存的镜像层字节数"从少到多选，两档难度各半):
+
+```bash
+uv run python scripts/swe_images.py extend data/swe-bench-verified --add 21 --max-per-repo 6   # 写 configs/swe_tasks_ext.txt
+uv run python scripts/swe_images.py pull data/swe-bench-verified -j 8 --list configs/swe_tasks_ext.txt
+```
+
+现在用的是 `configs/swe_tasks_all.txt`:原 19 个 + 扩充 21 个，共 40 个任务。
+
+### 4.3 把 Claude Code 预装进任务镜像
+
+Harbor 的 claude-code agent 启动前会检查容器里有没有 `claude`,有就跳过安装(apt 装 nodejs + 下载二进制，每个 trial 约 5 分钟)。所以把它预装进镜像:
+
+```bash
+uv run python scripts/bake_claude.py tools                       # 只需一次：构建 stayswitch-cc-tools(约 5 分钟)
+uv run python scripts/bake_claude.py bake configs/swe_tasks_all.txt   # 给每个任务镜像加一层 /root/.local(约 10 秒/个)
+uv run python scripts/bake_claude.py bake configs/tb2_tasks_all.txt   # TB2 任务同样适用
+uv run python scripts/bake_claude.py restore configs/swe_tasks_all.txt  # 回滚到原镜像
+```
+
+- 原镜像备份为 `stayswitch-orig/<task>:latest`,**不要删**;用一次 `docker tag` 原子切换，正在跑的任务看不到中间状态。
+- 新增的只有 `/root/.local`(claude 二进制，约 240 MB,当前版本 2.1.286),对 terminus-2 没有行为影响。但为了和旧结果严格可比，**恢复 terminus-2 的旧实验前请先 `restore`**。
+- 同一层内容在所有镜像间共享存储。
 
 ---
 
@@ -204,7 +232,7 @@ keep = 4
 
 [budget]                           # 可选：花费上限
 per_session_usd = 3.0              # 单条轨迹上限;超出后 proxy 替 agent 回复"任务完成"
-total_usd = 245.0                  # 所有 runs/*/calls.jsonl 合计的上限(不含 mock 模型)
+total_usd = 700.0                  # 所有 runs/*/calls.jsonl 合计的上限(不含 mock 模型);2026-10-02 起为 700
 
 [prices]
 path = "prices.toml"
@@ -286,6 +314,21 @@ bill.cache_aware, bill.cache_oblivious, bill.switches, bill.cold_calls
 uv run python -c "from stayswitch.budget import spent_in_logs; print(spent_in_logs('runs/*/calls.jsonl'))"
 ```
 
+注意：总预算是全局台账，一旦超过上限，所有正在跑的轨迹都会被 proxy 用 `budget_stop` 截停，正在跑的那组实验就作废了。排大批实验前先估算花费;`report_arms.py` 会把被"总预算"截停的轨迹剔除并在 stderr 报警(单轨迹 $3 的截停照常计入，各组一致)。
+
+### 7.5 压缩实验的分析脚本
+
+| 脚本 | 用途 |
+|---|---|
+| `scripts/perfect_cache_cost.py <run>...` | 按 CliffCompaction 论文附录 A.1 的"完美缓存"规则(只看 prompt 长度序列)重算花费，同时给真实花费、命中率、峰值上下文、压缩次数 |
+| `scripts/report_arms.py <基线run> <run>...` | 单种子：每组的解决率、调用数、每任务和每调用花费;与基线逐任务配对的差值 ± 标准误;冗余步数 e 的估计;逐任务对错表 |
+| `scripts/report_seeds.py name=run,run_r2,run_r3 ...` | 多种子：每组各种子的均值 ± 标准差、合并解决率 ± 二项标准误、按 (任务, 种子) 配对的差值。`--json` 输出 |
+| `scripts/pass_at_k.py name=run,run_r2,run_r3 ...` | 把各种子当作 k 次 rollout:pass@1、oracle pass@k、k 次 rollout 的花费、每美元解决数 |
+| `scripts/price_regimes.py name=run,... ...` | 不重跑，按四种缓存价目(Tinker、Anthropic 式、DeepSeek 式、OpenAI 式)重算每组花费，并给出 EOQ 在该价目下推出的触发点 |
+| `scripts/action_mix.py name=run,... ...` | 机制分析：每任务的探索 / 编辑 / 测试步数、重读文件次数、循环比例 |
+
+trial 与 Claude Code 会话的对应：会话 ID 就是 `jobs/<run>/*/<trial>/agent/sessions/projects/*/<session_id>.jsonl` 的文件名。同一任务多次 trial 时只取最新的。
+
 ---
 
 ## 8. 闭环分叉
@@ -327,6 +370,11 @@ scripts/start_proxy.sh configs/mock_fixed.toml 4011 &
 | 上下文超过 64K 报错 | 虚拟模型名 `stayswitch` 对 LiteLLM 来说是未知模型，所以要通过 `STAYSWITCH_MAX_INPUT_TOKENS` 告诉 terminus-2 真实上限 |
 | proxy 启动很慢 | LiteLLM 会去 GitHub 拉价格表。脚本里已经设置 `LITELLM_LOCAL_MODEL_COST_MAP=True` 跳过 |
 | 构建卡在下载 uv | 检查 Docker 的 `proxies` 配置和本机代理是否开着;旧的构建步骤可能还卡着，同样的新构建会等它，要先停掉旧的 |
+| Claude Code 一直没做 auto-compact,上下文顶到 64K 后 Tinker 报 `PromptTooLongException` | 环境变量名写错了。二进制只认 `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`,`CLAUDE_CODE_AUTOCOMPACT_PCT_OVERRIDE` 会被忽略。关闭原生压缩用 `DISABLE_AUTO_COMPACT=1` |
+| Claude Code 报 `reasoning_effort is not supported` | Claude Code 会带 `output_config` / `thinking`,LiteLLM 转成 OpenAI 格式时变成 `reasoning_effort`,Tinker 拒收。hook 已对 `/v1/messages` 自动去掉这些字段 |
+| Claude Code 报 "Write was called with input that could not be parsed as JSON" | Tinker 把多个并行工具调用放在一个流式 chunk 里，LiteLLM 会把参数拼成非法 JSON。`stayswitch/litellm_patches.py` 已在 hook 启动时修补 |
+| 用 zsh 把多个 run id 放进变量传给脚本，结果脚本只收到一个参数 | zsh 默认不对 `$VAR` 分词。用 `${=VAR}` 或直接写出参数 |
+| 构建 TB2 镜像报 "build tag cannot contain a digest" | 该任务的 `docker_image` 用 `@sha256` 固定，无法本地构建，换任务 |
 
 ---
 
@@ -335,3 +383,129 @@ scripts/start_proxy.sh configs/mock_fixed.toml 4011 &
 - terminus-2 不是 SWE-bench 主流榜单用的 harness,SWE 上的绝对解决率不能直接和榜单比较，只适合做策略之间的相对比较。
 - 本地构建的镜像和官方镜像略有差异(apt 源、未锁版本的包),SWE 用的是 Epoch AI 的 arm64 镜像。
 - 每个设置大多只跑了一次，19 个任务的解决率标准误约 11 个百分点。总花费受少数失控的长轨迹影响很大，建议同时看"每千次调用的花费"和"每个任务的调用次数"。
+
+---
+
+## 12. Claude Code harness 与 API 接入
+
+### 12.1 链路
+
+```
+Claude Code 2.1.286(任务容器内,Harbor 的 claude-code agent;子类 stayswitch.agents:StaySwitchClaudeCode)
+   │  POST /v1/messages(Anthropic 格式，流式),请求头 x-claude-code-session-id
+   │  ANTHROPIC_BASE_URL=http://host.docker.internal:<端口>,模型名固定为 "stayswitch"
+   ▼
+[可选] CliffCompaction 官方 proxy(--anthropic-upstream 指向下一跳)
+   ▼
+StaySwitch proxy(LiteLLM;/v1/messages 走它的 Anthropic→OpenAI 适配器)
+   ▼
+Tinker 的 OpenAI 兼容接口(Qwen3.6-35B-A3B 等)
+```
+
+本机直接跑(不进容器)也可以，用于冒烟测试:
+
+```bash
+scripts/start_proxy.sh configs/cc_smoke.toml 4000 &
+env -u BUN_OPTIONS CLAUDE_CONFIG_DIR=$(mktemp -d) ANTHROPIC_BASE_URL=http://127.0.0.1:4000 ANTHROPIC_API_KEY=sk-dummy \
+  ANTHROPIC_MODEL=stayswitch ANTHROPIC_DEFAULT_HAIKU_MODEL=stayswitch ANTHROPIC_DEFAULT_SONNET_MODEL=stayswitch \
+  ANTHROPIC_DEFAULT_OPUS_MODEL=stayswitch CLAUDE_CODE_SUBAGENT_MODEL=stayswitch \
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 claude -p "..." --dangerously-skip-permissions --output-format json
+```
+
+- `CLAUDE_CONFIG_DIR` 用一个空目录，避免读到本机的 MCP、插件和记忆，导致 prompt 变大、结果不可复现。
+- `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1` 后，每个 agent 步只有一次请求，没有后台的 Haiku 调用。
+- 所有档位(Haiku/Sonnet/Opus/子 agent)都指到 `stayswitch`,由 proxy 决定实际模型。
+
+### 12.2 proxy 对 `/v1/messages` 做的事(`proxy/stayswitch_hook.py`)
+
+| 处理 | 原因 |
+|---|---|
+| 会话 ID 取 `x-claude-code-session-id`(也认 `X-Session-ID`) | Claude Code 自带，不用注入 |
+| 去掉 `output_config` / `thinking` / `context_management` | 否则会被转成 Tinker 不支持的 `reasoning_effort` |
+| 子 agent 单独成轨迹:`<sid>~sub-<hash>` | 子 agent 和主 agent 共用会话头，但 system prompt 和工具集不同(按 `agent_key` 区分);模型和预算跟随主轨迹 |
+| 同一会话收到相同输入的请求视为重试，不增加步数 | Claude Code 在流式失败时会改用非流式重发 |
+| 记录工具调用、thinking 和 usage | 用于回放分叉，回放时 prompt 能逐字节一致 |
+| 回放由 `stayswitch/replay_server.py` 提供(端口 4390,hook 按需启动) | LiteLLM 的 mock 只支持文本、不支持流式和 `tool_use` |
+| 修补 LiteLLM 的流式翻译(`stayswitch/litellm_patches.py`) | 并行工具调用的参数会被拼成非法 JSON |
+| token 估计计入 system + 工具定义 | Claude Code 每次请求固定带约 18K token 的 system 和 26 个工具定义 |
+
+`signals.py`(失败、循环检测)和 `context.py`(压缩)都能读 Anthropic 的 `tool_use` / `tool_result` 块。
+
+### 12.3 在 Harbor 里跑
+
+```bash
+AGENT=cc scripts/run_model.sh swe-bench/swe-bench-verified configs/swe_tasks_all.txt configs/cc_mid.toml 4030 3
+AGENT=cc DISABLE_AUTO_COMPACT=1 scripts/run_cliff.sh configs/swe_tasks_all.txt configs/cc_mid_cliff45.toml fixed 45000
+AGENT=cc DISABLE_AUTO_COMPACT=1 EOQ_VERSION=3 EOQ_CEILING=46000 \
+  scripts/run_cliff.sh configs/swe_tasks_all.txt configs/cc_mid_eoq3.toml eoq 2.3
+```
+
+`scripts/run_harbor_cc.sh` 的环境变量:
+
+| 变量 | 默认值 | 作用 |
+|---|---|---|
+| `CC_BASE_URL` | `http://host.docker.internal:$STAYSWITCH_PORT` | 容器里 Claude Code 访问的地址(串联 Cliff 时由 `run_cliff.sh` 设为 Cliff 端口) |
+| `CC_COMPACT_PCT` | 25 | 原生 auto-compact 的触发比例(Claude Code 假设窗口 200K,25% 约 50K) |
+| `DISABLE_AUTO_COMPACT` | 不设 | 设为 1 时关闭原生压缩。**所有 Cliff / EOQ 组都必须设**,否则两个压缩器会互相干扰 |
+| `STAYSWITCH_CC_AGENT` | `stayswitch.agents:StaySwitchClaudeCode` | 使用的 agent 类 |
+
+### 12.4 CliffCompaction 和 EOQ 的参数
+
+| 变量 | 作用 |
+|---|---|
+| `CLIFF_THOUGHT_MAX_CHARS=300`、`CLIFF_THINKING_MAX_CHARS=300` | 和论文一致：被压缩区域里每轮 assistant 文本和 thinking 截到 300 字符(官方默认不限) |
+| `KEEP_RECENT` | 保留最近几轮原文(默认 3) |
+| `EOQ_VERSION` | 1:全历史平均增长 + 猜测的 L0;2:周期内增长 + 实测 L0(触发偏早，已弃用);3:全历史增长 + 实测 L0(当前推荐) |
+| `EOQ_CEILING` | 阈值上限(Cliff 的估计 token)。Cliff 按字符数 / 4 估计，比真实 token 低约 30%,64K 窗口下设 46000 |
+| `EOQ_FAILURE_TRIGGER=1` | v3f:连续 3 次失败或重复动作时提前压缩，只保留最后一轮(两次之间至少隔 4 步) |
+
+冗余步数参数(`eoq` 模式的最后一个参数)目前用 2.3,来自配对运行的实测。
+
+### 12.5 运行速度
+
+- 预装镜像后，一个 SWE trial 约 5 到 8 分钟(agent 执行 1 到 5 分钟，验证约 3 分钟)。
+- terminus-2 每个 trial 要装 tmux,约 6 到 7 分钟。
+- TB2 轨迹很长：一个任务约 400 次调用、$1.6、45 分钟。
+
+### 12.6 端口分配(多组实验并行时)
+
+| 端口 | 用途 |
+|---|---|
+| 4000 / 4005 / 4011–4019 | 本机冒烟、mock 测试 |
+| 4001 + 8257 | terminus-2 实验(router + Cliff) |
+| 4020 / 4021 + 8259 | 另一个会话的实验 |
+| 4030 + 8330、4031 + 8331、4032 + 8332、4033 + 8333 | Claude Code 实验的四条并行队列 |
+| 4390 | 回放服务(多个 proxy 共用，无状态) |
+| 8765 | GitHub release 缓存 |
+
+停止进程只按端口或 PID(`lsof -tiTCP:<端口> -sTCP:LISTEN \| xargs kill`),**不要**用 `pkill -f "litellm --config"`,它会杀掉所有会话的 proxy。
+
+---
+
+## 13. 当前实验方案(2026-10-02)
+
+研究问题：压缩时机能否从价目表解析地推出(EOQ 规则 L\* = L₀ + √(2gC/c_r)),不调参就在不同 harness 上落到各自的最优区间。设置参照 CliffCompaction 论文(arXiv 2609.26779,对照见 `docs/CLIFF_ALIGNMENT.md`),结果见 `docs/RESULTS_CC.md`。
+
+公共设置:mid 模型(Qwen3.6-35B-A3B,Tinker,64K 窗口),SWE-bench Verified 40 题(`configs/swe_tasks_all.txt`),每组 3 个种子;成本按论文的完美缓存规则计。
+
+| 批次 | run id | 组 | 状态 |
+|---|---|---|---|
+| Claude Code 主矩阵 | `cc_mid{,_r2,_r3}`、`cc_mid_cliff{45,40,32}*`、`cc_mid_eoq{1,2}*` | 原生 auto-compact、Cliff 45K/40K/32K、EOQ v1/v2 | 完成;盘满窗口内的 trial 在重跑(`runs/rerun_diskwindow.sh`) |
+| EOQ v3 / v3f(Claude Code) | `cc_mid_eoq3*`、`cc_mid_eoq3f*` | 修正后的 EOQ;失败触发提前压缩 | 进行中(`runs/queue_cc_eoq3.sh` → `queue_cc_eoq3f.sh`) |
+| 跨 harness 迁移 | `tm_mid_{native,cliff16,cliff32,eoq3}*` | terminus-2:原生摘要、Cliff 16K/32K、EOQ v3 | 进行中(`runs/queue_tm.sh`) |
+| 跨模型 | `cc_strong_{native,cliff45,eoq3}` | 397B,1 个种子 | 排队(`runs/queue_cc_strong.sh`) |
+| 长时程 | `cc_tb2_{native,cliff45,eoq3}{,_r2}` | Terminal-Bench 2 的 12 题,2 个种子 | 排队(`runs/queue_cc_tb2.sh`) |
+
+队列脚本都在 `runs/` 下，按 PID 串联(后一个等前一个的 PID 退出)。查看进度:`grep "start \|all done" runs/queue_*.log`。
+
+出表:
+
+```bash
+A="native=cc_mid,cc_mid_r2,cc_mid_r3 cliff45=cc_mid_cliff45,cc_mid_cliff45_r2,cc_mid_cliff45_r3 eoq1=cc_mid_eoq1,cc_mid_eoq1_r2,cc_mid_eoq1_r3"
+uv run python scripts/report_seeds.py ${=A}      # zsh 下用 ${=A};bash 下直接 $A
+uv run python scripts/pass_at_k.py ${=A}
+uv run python scripts/price_regimes.py ${=A}
+uv run python scripts/action_mix.py ${=A}
+```
+
+主图:`docs/fig_dose_response.html`(解决率和每任务花费对压缩触发点)。
