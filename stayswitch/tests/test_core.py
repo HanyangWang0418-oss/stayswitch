@@ -431,3 +431,19 @@ def test_eoq_v2_threshold_properties():
     after, info = t.threshold("k", head=18000, mean_growth=800)
     assert info["l0_observed"] and info["l0"] == 26000 and info["compactions"] == 1
     assert after > 26000                                                                  # next cycle starts from the measured size
+
+
+def test_eoq_v3_uses_history_growth_and_measured_l0():
+    from stayswitch.eoq_trigger import EOQTrigger
+
+    price = Price.from_mapping({"input": 0.54, "output": 1.335, "cache_read": 0.108, "cache_write": 0.54})
+    v2 = EOQTrigger(price, extra_steps=2.3, keep_recent=3, ceiling=10**9, growth="cycle")
+    v3 = EOQTrigger(price, extra_steps=2.3, keep_recent=3, ceiling=10**9, growth="history")
+    for t in (v2, v3):
+        for out in (21000, 21400, 21900):  # a quiet cycle: ~450/call observed, while the history mean is 1250
+            t.observe("k", est_out=out, compacted=False)
+    assert v2.threshold("k", head=18000, mean_growth=1250)[1]["growth"] < 600
+    assert v3.threshold("k", head=18000, mean_growth=1250)[1]["growth"] == 1250
+    assert v3.threshold("k", head=18000, mean_growth=1250)[0] > v2.threshold("k", head=18000, mean_growth=1250)[0]
+    v3.observe("k", est_out=26000, compacted=True)
+    assert v3.threshold("k", head=18000, mean_growth=1250)[1]["l0"] == 26000  # measured post-compaction size kept

@@ -46,10 +46,13 @@ class _Trajectory:
 
 
 class EOQTrigger:
+    """``growth="cycle"`` (v2) estimates g from the current cycle; ``growth="history"`` (v3) uses the whole-history mean
+    the caller passes, which on Claude Code tracked the true growth better (early file reads dominate; see v2 note)."""
+
     def __init__(self, price: Price, *, extra_steps: float, keep_recent: int, out_tokens: int = 900,
-                 min_gap: int = 4, ceiling: int = 52000) -> None:
+                 min_gap: int = 4, ceiling: int = 52000, growth: str = "cycle") -> None:
         self.price, self.extra_steps, self.keep_recent = price, extra_steps, keep_recent
-        self.out_tokens, self.min_gap, self.ceiling = out_tokens, min_gap, ceiling
+        self.out_tokens, self.min_gap, self.ceiling, self.growth_mode = out_tokens, min_gap, ceiling, growth
         self._state: dict[str, _Trajectory] = {}
 
     def _get(self, key: str) -> _Trajectory:
@@ -59,7 +62,7 @@ class EOQTrigger:
         """Trigger for the next request of trajectory ``key``. ``mean_growth`` is the fallback growth rate
         (tokens per turn averaged over the whole history) used until a cycle has been observed."""
         s = self._get(key)
-        g = s.growth if s.growth is not None else mean_growth
+        g = s.growth if s.growth is not None and self.growth_mode == "cycle" else mean_growth
         l0 = s.l0 if s.l0 is not None else head + (self.keep_recent + 1) * g
         star = eoq_l_star(self.price, l0=l0, head=head, growth=g, extra_steps=self.extra_steps,
                           out_tokens=self.out_tokens, min_gap=self.min_gap, ceiling=self.ceiling)

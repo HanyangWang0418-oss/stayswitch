@@ -39,8 +39,12 @@ def install(model: str, extra_steps: float, log_path: Path, ceiling: int, min_ga
     rule = eoq_threshold(price, extra_steps=extra_steps, ceiling=ceiling)
     original = cliff_engine.Engine.prepare
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    if os.environ.get("EOQ_VERSION", "1") == "2":  # measured L0 / growth, cached head excluded (stayswitch.eoq_trigger)
-        return install_v2(price, extra_steps, log_path, ceiling, min_gap, original)
+    version = os.environ.get("EOQ_VERSION", "1")
+    # EOQ_CEILING overrides --ceiling: Cliff estimates tokens as chars/4, which runs ~30% low on Claude Code content, so a
+    # 52K estimate can exceed Tinker's 64K window; 46K keeps real prompts under ~60K.
+    ceiling = int(os.environ.get("EOQ_CEILING", ceiling))
+    if version in ("2", "3"):  # measured L0, cached head excluded (stayswitch.eoq_trigger); v3 keeps v1's growth prior
+        return install_v2(price, extra_steps, log_path, ceiling, min_gap, original, growth="cycle" if version == "2" else "history")
 
     def prepare(self, body, dialect):
         msgs = body[dialect.messages_key]
@@ -65,10 +69,10 @@ def install(model: str, extra_steps: float, log_path: Path, ceiling: int, min_ga
     cliff_engine.Engine.prepare = prepare
 
 
-def install_v2(price, extra_steps: float, log_path: Path, ceiling: int, min_gap: int, original) -> None:
+def install_v2(price, extra_steps: float, log_path: Path, ceiling: int, min_gap: int, original, growth: str = "cycle") -> None:
     from stayswitch.eoq_trigger import EOQTrigger
 
-    trigger = EOQTrigger(price, extra_steps=extra_steps, keep_recent=3, min_gap=min_gap, ceiling=ceiling)
+    trigger = EOQTrigger(price, extra_steps=extra_steps, keep_recent=3, min_gap=min_gap, ceiling=ceiling, growth=growth)
 
     def prepare(self, body, dialect):
         msgs = body[dialect.messages_key]
