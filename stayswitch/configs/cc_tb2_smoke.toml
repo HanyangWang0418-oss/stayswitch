@@ -1,0 +1,11 @@
+[run]
+id = "cc_tb2_smoke"
+[policy]
+kind = "fixed"
+model = "mid"
+[budget]
+per_session_usd = 3.0
+[prices]
+path = "prices.toml"
+[log]
+path = "../runs/cc_tb2_smoke/calls.jsonl"

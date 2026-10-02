@@ -1,9 +1,5 @@
-# Terminal-Bench 2 extension: 8 more tasks, random seed 0, official-library base images only.
-glycan-ms2-elucidation  # ubuntu:24.04
-multi-source-data-merger  # python:3.11-slim
-prove-plus-comm  # ubuntu:24.04
-sqlite-with-gcov  # ubuntu:24.04
-tune-mjcf  # python:3.13-slim-bookworm
-extract-moves-from-video  # ubuntu:24.04
-biped-contact-dynamics  # ubuntu:24.04
-regex-log  # ubuntu:24.04
+# Terminal-Bench 2 extension: 4 more tasks with locally built arm64 images (others failed on the apt/registry mirrors).
+extract-moves-from-video
+regex-log
+sqlite-with-gcov
+tune-mjcf
