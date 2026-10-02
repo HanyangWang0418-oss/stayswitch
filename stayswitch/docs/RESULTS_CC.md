@@ -56,6 +56,13 @@ explore / 5.4 edit / 6.7 test / 13.4 re-reads; cliff32 24.2 / 3.7 / 5.1 / 18.1; 
    `rapid_refill_breaker`. Agent outcomes, not infrastructure; nothing was rerun selectively.
 3. The native trigger (~50K real) is slightly above the paper's ~45K matched point.
 4. 120 pairs give ±3.5–4 points on paired differences; eoq1 vs native ≈ 1.5 se, cliff40 ≈ 1.5 se, cliff45 ≈ 0.8 se.
-5. One provider, one model so far; price transfer is by re-pricing, not real runs. Running: terminus-2 matrix (native /
+5. **Infrastructure incident, 2026-10-02 ~11:55–13:40 local:** the Docker data disk filled (Harbor's per-trial build
+   cache, 72 GB). Symptoms: every terminus-2 trial failed at setup (`tmux` apt install: "invalid signature" = gpgv cannot
+   write), three `RewardFileNotFound` on long astropy tasks, and one Claude Code trial scoring 0 on a task every other arm
+   solves. The 32 Claude Code trials that overlapped the window (eoq1_r3: 1, eoq2_r3: 21, eoq3 seed 1: 10) were rerun
+   in full — not selectively — and the report keeps each task's latest trial; the terminus matrix was restarted from
+   scratch. A disk guard now prunes the build cache above 85%. The numbers in the main table above predate the reruns
+   for eoq2_r3's 21 extension trials and will be refreshed.
+6. One provider, one model so far; price transfer is by re-pricing, not real runs. Running: terminus-2 matrix (native /
    Cliff 16K / Cliff 32K / EOQ v3, 40 tasks, 3 seeds), EOQ v3 and v3f (failure-triggered) on Claude Code, 397B
    replication (native / Cliff 45K / EOQ v3), Terminal-Bench 2 long-horizon (12 tasks, 2 seeds). Ledger $348 of $700.
