@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00435_nsf_overrun",
+ "source_task_id": "graphseed_000435_graph_intent_712c085ac6fc9d97",
+ "files": [
+  "nsf_developmental_sciences_awards.csv"
+ ],
+ "question": "In nsf_developmental_sciences_awards.csv, for awards where fundsObligatedAmt exceeds estimatedTotalAmt, compute the total excess (sum of fundsObligatedAmt minus estimatedTotalAmt) and express it as a percentage of the total estimatedTotalAmt across ALL awards in the file. Round to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/nsf_developmental_sciences_awards.csv')\ne=(d.fundsObligatedAmt-d.estimatedTotalAmt).clip(lower=0).sum()\nprint(round(e/d.estimatedTotalAmt.sum()*100,2))",
+ "answer": 3.53,
+ "abs_tol": 0.005
+}

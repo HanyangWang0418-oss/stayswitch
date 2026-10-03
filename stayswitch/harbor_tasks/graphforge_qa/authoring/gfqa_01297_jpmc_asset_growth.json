@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01297_jpmc_asset_growth",
+ "source_task_id": "graphseed_001297_graph_intent_94054cd3a8c52769",
+ "files": [
+  "fdic_jpmc_financials.json"
+ ],
+ "question": "From fdic_jpmc_financials.json (JPMorgan Chase Bank NA FDIC financials; the API response is embedded as a JSON string in the 'text' field), find total ASSET at the earliest and latest REPDTE. Compute the percentage growth from earliest to latest, rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "easy",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nt=json.loads(json.load(open(D+'/fdic_jpmc_financials.json'))['text'])\nd=pd.DataFrame([x['data'] for x in t['data']]).sort_values('REPDTE')\nprint(round((d.ASSET.iloc[-1]/d.ASSET.iloc[0]-1)*100,2))",
+ "answer": 25.91,
+ "abs_tol": 0.005
+}

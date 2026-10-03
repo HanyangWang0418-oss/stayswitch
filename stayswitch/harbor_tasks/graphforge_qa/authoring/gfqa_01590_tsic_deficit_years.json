@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01590_tsic_deficit_years",
+ "source_task_id": "graphseed_001590_graph_intent_7aa6cfe6963e07eb",
+ "files": [
+  "tsic_propublica_990_financials.json"
+ ],
+ "question": "In tsic_propublica_990_financials.json (ProPublica Form 990 data for Tsic Inc), use the filings_with_data entries. For tax years 2014 through 2023 inclusive, compute the surplus (totrevenue minus totfuncexpns) per year. Report the sum of the surpluses of years with a deficit (negative surplus) only, as a negative number in dollars.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=json.load(open(D+'/tsic_propublica_990_financials.json'))['filings_with_data']\ntot=0\nfor f in d:\n    if 2014<=f['tax_prd_yr']<=2023:\n        s=f['totrevenue']-f['totfuncexpns']\n        if s<0: tot+=s\nprint(tot)",
+ "answer": -2027057.0,
+ "abs_tol": 0
+}

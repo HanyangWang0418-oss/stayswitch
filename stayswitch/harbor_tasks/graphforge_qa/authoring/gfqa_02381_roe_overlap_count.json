@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02381_roe_overlap_count",
+ "source_task_id": "graphseed_002381_graph_intent_0b820798ebe3f319",
+ "files": [
+  "republic_bank_full_financials.csv",
+  "peer_mid_penn_bank_financials.csv"
+ ],
+ "question": "In republic_bank_full_financials.csv and peer_mid_penn_bank_financials.csv, consider only quarter-end dates (REPDTE) that appear in both files. On how many of those dates was Mid Penn Bank's ROE strictly higher than Republic Bank's ROE?",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nr=pd.read_csv(D+'/republic_bank_full_financials.csv',dtype={'REPDTE':str});m=pd.read_csv(D+'/peer_mid_penn_bank_financials.csv',dtype={'REPDTE':str})\nj=r.merge(m,on='REPDTE',suffixes=('_r','_m'))\nprint(int((j.ROE_m>j.ROE_r).sum()))",
+ "answer": 39.0,
+ "abs_tol": 0
+}

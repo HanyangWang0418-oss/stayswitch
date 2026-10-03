@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02004_nitro_response",
+ "source_task_id": "graphseed_002004_graph_intent_80f613fdfed4af54",
+ "files": [
+  "engelstad_nitro.csv"
+ ],
+ "question": "In engelstad_nitro.csv (corn yield trials by location, year and nitrogen rate), for the Knoxville location compute for each year the yield gain from the 0 nitrogen rate to the 335 nitrogen rate (yield at 335 minus yield at 0), then average those gains across all years. Round to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/engelstad_nitro.csv');k=d[d['loc']=='Knoxville']\np=k.pivot_table(index='year',columns='nitro',values='yield')\nprint(round((p[335]-p[0]).mean(),2))",
+ "answer": 19.98,
+ "abs_tol": 0.005
+}

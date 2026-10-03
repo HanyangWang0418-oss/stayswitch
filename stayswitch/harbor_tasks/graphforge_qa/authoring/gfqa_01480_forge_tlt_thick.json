@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01480_forge_tlt_thick",
+ "source_task_id": "graphseed_001480_graph_intent_52a597798be5273c",
+ "files": [
+  "FORGE_Well_Lith_Logs_2018.csv"
+ ],
+ "question": "In FORGE_Well_Lith_Logs_2018.csv (lithology log intervals; skip blank rows with no Well), sum thick_ft by well for intervals whose Unit is 'Tlt'. Which well has the largest total Tlt thickness, and what is the difference in feet between it and the second-largest well? Answer with that difference in feet (number).",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/FORGE_Well_Lith_Logs_2018.csv').dropna(subset=['Well'])\ns=d[d.Unit=='Tlt'].groupby('Well').thick_ft.sum().sort_values(ascending=False)\nprint(round(float(s.iloc[0]-s.iloc[1]),2))",
+ "answer": 110.0,
+ "abs_tol": 0.01
+}

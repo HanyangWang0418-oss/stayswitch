@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02381_eqratio_2023",
+ "source_task_id": "graphseed_002381_graph_intent_0b820798ebe3f319",
+ "files": [
+  "republic_bank_full_financials.csv",
+  "peer_mid_penn_bank_financials.csv"
+ ],
+ "question": "Using republic_bank_full_financials.csv and peer_mid_penn_bank_financials.csv as source reports, take the four quarter-end reports with REPDTE in calendar year 2023 for each bank. For each bank compute the simple average of the quarterly equity-to-assets ratio (EQ divided by ASSET, as a percentage). Report Mid Penn's average minus Republic's average, in percentage points rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nr=pd.read_csv(D+'/republic_bank_full_financials.csv',dtype={'REPDTE':str});m=pd.read_csv(D+'/peer_mid_penn_bank_financials.csv',dtype={'REPDTE':str})\nf=lambda d:(d[d.REPDTE.str[:4]=='2023'].eval('EQ/ASSET*100')).mean()\nprint(round(f(m)-f(r),2))",
+ "answer": 9.32,
+ "abs_tol": 0.005
+}

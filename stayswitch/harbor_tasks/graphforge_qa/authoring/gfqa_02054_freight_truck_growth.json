@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02054_freight_truck_growth",
+ "source_task_id": "graphseed_002054_graph_intent_70075b22ab25b23a",
+ "files": [
+  "bts_freight_ton_miles.csv"
+ ],
+ "question": "In bts_freight_ton_miles.csv, road freight is labelled 'Highway' in most years but 'Truck' in 2022; treat them as the same mode. The 2050 rows are projections. Compute the percentage growth in road freight ton-miles from 2019 to 2050, and also the road mode's share of Total in 2050; report the growth percentage minus the 2050 share (both in percent), rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "hard",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/bts_freight_ton_miles.csv')\nd['Mode']=d.Mode.replace({'Truck':'Highway'})\ng=lambda y,m:float(d[(d.Year==y)&(d.Mode==m)].Value.iloc[0])\nprint(round((g(2050,'Highway')/g(2019,'Highway')-1)*100-g(2050,'Highway')/g(2050,'Total')*100,2))",
+ "answer": 21.11,
+ "abs_tol": 0.005
+}

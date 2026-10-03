@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01297_jpmc_dep_ratio_shift",
+ "source_task_id": "graphseed_001297_graph_intent_94054cd3a8c52769",
+ "files": [
+  "fdic_jpmc_financials.json"
+ ],
+ "question": "fdic_jpmc_financials.json holds FDIC quarterly financials for JPMorgan Chase Bank NA (the file wraps the API response as a JSON string in its 'text' field). Compute the deposit-to-asset ratio (DEP/ASSET, in percent) for the earliest and the latest REPDTE in the file. By how many percentage points did it change from earliest to latest (latest minus earliest), rounded to 2 decimals?",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nt=json.loads(json.load(open(D+'/fdic_jpmc_financials.json'))['text'])\nd=pd.DataFrame([x['data'] for x in t['data']]).sort_values('REPDTE')\nr=(d.DEP/d.ASSET*100)\nprint(round(r.iloc[-1]-r.iloc[0],2))",
+ "answer": -5.91,
+ "abs_tol": 0.005
+}

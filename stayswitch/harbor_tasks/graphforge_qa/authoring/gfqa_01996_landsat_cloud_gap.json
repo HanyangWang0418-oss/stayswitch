@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01996_landsat_cloud_gap",
+ "source_task_id": "graphseed_001996_graph_intent_66c26fee39c5f366",
+ "files": [
+  "landsat_l1_scenes_export.csv"
+ ],
+ "question": "In landsat_l1_scenes_export.csv, ignoring scenes whose eo_cloud_cover is blank, compute the mean eo_cloud_cover for LANDSAT_8 scenes and for LANDSAT_9 scenes (platform column). Report the LANDSAT_9 mean minus the LANDSAT_8 mean, rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/landsat_l1_scenes_export.csv').dropna(subset=['eo_cloud_cover'])\nm=d.groupby('platform').eo_cloud_cover.mean()\nprint(round(m['LANDSAT_9']-m['LANDSAT_8'],2))",
+ "answer": -3.69,
+ "abs_tol": 0.005
+}

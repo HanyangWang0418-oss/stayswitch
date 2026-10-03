@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00187_webserver_bytes_per_req",
+ "source_task_id": "graphseed_000187_graph_intent_a60832eeb7cab2ec",
+ "files": [
+  "web_server_benchmark_2023.json"
+ ],
+ "question": "In web_server_benchmark_2023.json, each server has a requests count and a bytes figure given as a string like '6,731.92 mb'. Compute megabytes per request (bytes figure in mb divided by requests) for each server. Which server has the highest value? Give the server name exactly as in the data.",
+ "answer_type": "string",
+ "difficulty": "easy",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=json.load(open(D+'/web_server_benchmark_2023.json'))\nb=lambda s:float(s.replace(',','').replace('mb','').strip())\nprint(max(d,key=lambda x:b(x['bytes'])/x['requests'])['server'])",
+ "answer": "nginx 1.22.1"
+}

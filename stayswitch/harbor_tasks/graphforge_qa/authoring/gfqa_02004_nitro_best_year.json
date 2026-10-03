@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02004_nitro_best_year",
+ "source_task_id": "graphseed_002004_graph_intent_80f613fdfed4af54",
+ "files": [
+  "engelstad_nitro.csv"
+ ],
+ "question": "In engelstad_nitro.csv, restrict to rows with nitro of 201 or higher. Average the yield across both locations and all such nitrogen rates for each year. Which year has the highest average yield? Answer with the year as a number.",
+ "answer_type": "number",
+ "difficulty": "easy",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/engelstad_nitro.csv');d=d[d.nitro>=201]\nprint(int(d.groupby('year')['yield'].mean().idxmax()))",
+ "answer": 1963.0,
+ "abs_tol": 0
+}

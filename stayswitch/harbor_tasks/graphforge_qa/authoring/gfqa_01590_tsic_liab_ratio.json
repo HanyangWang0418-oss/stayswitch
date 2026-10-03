@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01590_tsic_liab_ratio",
+ "source_task_id": "graphseed_001590_graph_intent_7aa6cfe6963e07eb",
+ "files": [
+  "tsic_propublica_990_financials.json"
+ ],
+ "question": "From tsic_propublica_990_financials.json (filings_with_data), compute liabilities-to-assets (totliabend / totassetsend, in percent) for each tax year. Report the average of that ratio over tax years 2018 through 2023 inclusive minus the average over tax years 2010 through 2015 inclusive, rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "hard",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=json.load(open(D+'/tsic_propublica_990_financials.json'))['filings_with_data']\nr=lambda a,b:sum(f['totliabend']/f['totassetsend']*100 for f in d if a<=f['tax_prd_yr']<=b)/sum(1 for f in d if a<=f['tax_prd_yr']<=b)\nprint(round(r(2018,2023)-r(2010,2015),2))",
+ "answer": 8.82,
+ "abs_tol": 0.005
+}

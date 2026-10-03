@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00516_vacant_lots_acres",
+ "source_task_id": "graphseed_000516_graph_intent_46c0047a74c249c1",
+ "files": [
+  "city_owned_vacant_lots.csv"
+ ],
+ "question": "In city_owned_vacant_lots.csv, consider only lots with Platted (Y/N) equal to True. Group by the base zoning district, which is the part of the Zoning value before the first '/'. Which base zoning district has the largest total Lot Size (Sqft) among platted lots, and what is that total in acres (divide square feet by 43560)? Answer with the acres figure rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/city_owned_vacant_lots.csv')\nd=d[d['Platted (Y/N)'].astype(str)=='True']\ns=d.groupby(d.Zoning.str.split('/').str[0])['Lot Size (Sqft)'].sum()\nprint(round(s.max()/43560,2))",
+ "answer": 2.46,
+ "abs_tol": 0.005
+}

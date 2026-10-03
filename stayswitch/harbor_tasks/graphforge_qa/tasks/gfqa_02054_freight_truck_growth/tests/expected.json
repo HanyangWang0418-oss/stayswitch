@@ -1,0 +1,5 @@
+{
+ "type": "number",
+ "value": 21.11,
+ "abs_tol": 0.005
+}

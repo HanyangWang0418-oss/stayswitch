@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00424_combined_eq_ratio",
+ "source_task_id": "graphseed_000424_graph_intent_cac1fc68c1dac98d",
+ "files": [
+  "pnc_bank_financials_fdic.json",
+  "bbva_usa_financials_fdic.json"
+ ],
+ "question": "The files pnc_bank_financials_fdic.json (PNC Bank) and bbva_usa_financials_fdic.json (BBVA USA) are FDIC financial extracts (dollar values in thousands). For the most recent quarter-end (REPDTE) that appears in both files, compute the combined equity-to-assets ratio of the two banks: (PNC EQ + BBVA EQ) divided by (PNC ASSET + BBVA ASSET), as a percentage rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\ndef L(f):\n    return pd.DataFrame([x['data'] for x in json.load(open(D+'/'+f))['data']])\np=L('pnc_bank_financials_fdic.json');b=L('bbva_usa_financials_fdic.json')\nd=max(set(p.REPDTE)&set(b.REPDTE))\nP=p[p.REPDTE==d].iloc[0];B=b[b.REPDTE==d].iloc[0]\nprint(round((P.EQ+B.EQ)/(P.ASSET+B.ASSET)*100,2))",
+ "answer": 10.29,
+ "abs_tol": 0.005
+}

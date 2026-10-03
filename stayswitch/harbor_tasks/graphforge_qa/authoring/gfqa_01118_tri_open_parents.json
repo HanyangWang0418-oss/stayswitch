@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_01118_tri_open_parents",
+ "source_task_id": "graphseed_001118_graph_intent_f28f65fb3df79030",
+ "files": [
+  "tri_facilities_st_john_baptist.csv",
+  "tri_facilities_st_james_parish.csv"
+ ],
+ "question": "Combine tri_facilities_st_john_baptist.csv and tri_facilities_st_james_parish.csv (EPA TRI facilities). Considering only facilities that are not closed (fac_closed_ind equal to 0) and that have a non-empty standardized_parent_company, how many distinct standardized parent companies are there in total across the two files?",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nt=pd.concat([pd.read_csv(D+'/tri_facilities_st_john_baptist.csv'),pd.read_csv(D+'/tri_facilities_st_james_parish.csv')])\nt=t[(t.fac_closed_ind==0)&t.standardized_parent_company.notna()]\nprint(t.standardized_parent_company.nunique())",
+ "answer": 21.0,
+ "abs_tol": 0
+}
