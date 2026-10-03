@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02040_school_share",
+ "source_task_id": "graphseed_002040_graph_intent_dc7b6cba13cbec0c",
+ "files": [
+  "nyc_population_projections_2010_2040.csv"
+ ],
+ "question": "In nyc_population_projections_2010_2040.csv, compute the five boroughs' combined School-Age (5 to17) population in 2040 as a percent of their combined Total population in 2040 (exclude the New York City aggregate rows). Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 14.87,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/nyc_population_projections_2010_2040.csv')\nd['Borough']=d.Borough.str.strip();d['Age Group']=d['Age Group'].str.strip()\nd=d[d.Borough!='New York City']\ns=d[d['Age Group'].str.startswith('School')]['2040'].sum();t=d[d['Age Group']=='Total']['2040'].sum()\nprint(round(float(100*s/t),2))",
+ "abs_tol": 0.005
+}

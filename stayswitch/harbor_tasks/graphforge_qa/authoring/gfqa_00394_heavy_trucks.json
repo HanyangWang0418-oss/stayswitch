@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00394_heavy_trucks",
+ "source_task_id": "graphseed_000394_graph_intent_b032add76d63ec4a",
+ "files": [
+  "fdot-aadt-us19-sr55-pasco-hernando.csv"
+ ],
+ "question": "In fdot-aadt-us19-sr55-pasco-hernando.csv, estimate daily truck volume per segment as AADT x TFCTR / 100. Summed over all segments of COUNTY Pasco with AADT of at least 5000, what is the estimated total daily truck volume, rounded to 1 decimal?",
+ "answer_type": "number",
+ "answer": 20985.1,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/fdot-aadt-us19-sr55-pasco-hernando.csv')\nd=d[(d.COUNTY=='Pasco')&(d.AADT>=5000)]\nprint(round(float((d.AADT*d.TFCTR/100).sum()),1))",
+ "abs_tol": 0.05
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00685_gsa_growth",
+ "source_task_id": "graphseed_000685_graph_intent_0a7b2305a1661703",
+ "files": [
+  "gsa_pov_mileage_rates.csv"
+ ],
+ "question": "In gsa_pov_mileage_rates.csv, what is the percentage increase in the 'automobile' reimbursement rate between the entry effective 2022-01-01 and the entry effective 2026-07-01? Round to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "easy",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\ng=pd.read_csv(D+'/gsa_pov_mileage_rates.csv').set_index('effective_date')\nprint(round(100*(g.loc['2026-07-01','automobile']/g.loc['2022-01-01','automobile']-1),2))\n",
+ "answer": 29.91,
+ "abs_tol": 0.005
+}

@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00791_density_top",
+ "source_task_id": "graphseed_000791_graph_intent_db2a62842e302e63",
+ "files": [
+  "caltrans_2020_adjusted_urban_area.csv"
+ ],
+ "question": "Using caltrans_2020_adjusted_urban_area.csv, consider only urban areas with Population of at least 100000. Dividing Population by the Area_sqm column gives a density figure. Which urban area (give its NAME exactly as in the file) has the highest density?",
+ "answer_type": "string",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nc=pd.read_csv(D+'/caltrans_2020_adjusted_urban_area.csv')\nc=c[c.Population>=100000].copy()\nc['d']=c.Population/c.Area_sqm\nprint(c.sort_values('d').iloc[-1].NAME)\n",
+ "answer": "Los Angeles--Long Beach--Anaheim, CA"
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02192_inversion_days",
+ "source_task_id": "graphseed_002192_graph_intent_cd8505820c0b0715",
+ "files": [
+  "treasury_yield_curve_2023.csv"
+ ],
+ "question": "Using treasury_yield_curve_2023.csv (daily par yields, percent), on how many trading days in 2023 did the 2 Yr yield exceed the 10 Yr yield by at least 0.50 percentage points (2 Yr minus 10 Yr >= 0.50)?",
+ "answer_type": "number",
+ "answer": 167,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/treasury_yield_curve_2023.csv')\nprint(int(((d['2 Yr']-d['10 Yr'])>=0.5-1e-9).sum()))",
+ "abs_tol": 0
+}

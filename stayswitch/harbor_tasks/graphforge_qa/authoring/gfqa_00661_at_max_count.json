@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00661_at_max_count",
+ "source_task_id": "graphseed_000661_graph_intent_d8706ed8aa24e8ce",
+ "files": [
+  "mdlg_violation_items.csv",
+  "osha_penalty_schedule_2024.json"
+ ],
+ "question": "Match each row of mdlg_violation_items.csv to the 2024 statutory maximum per violation in osha_penalty_schedule_2024.json using citation_type (Serious->serious, Willful->willful, Repeat->repeat). How many items have a current_penalty exactly equal to that statutory maximum?",
+ "answer_type": "number",
+ "answer": 13,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nimport json\nd=pd.read_csv(D+'/mdlg_violation_items.csv')\ns=json.load(open(D+'/osha_penalty_schedule_2024.json'))['violation_types']\nm=d.citation_type.str.lower().map(lambda k:s[k]['statutory_max_per_violation'])\nprint(int((d.current_penalty==m).sum()))",
+ "abs_tol": 0
+}

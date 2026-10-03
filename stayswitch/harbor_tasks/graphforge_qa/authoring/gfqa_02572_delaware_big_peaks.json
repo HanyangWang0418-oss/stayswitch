@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02572_delaware_big_peaks",
+ "source_task_id": "graphseed_002572_graph_intent_ae36286d10cafb7c",
+ "files": [
+  "nwis_peak_delaware_trenton.csv"
+ ],
+ "question": "In nwis_peak_delaware_trenton.csv (annual peak streamflow records, peak_va in cfs; the second line is a format row to ignore), how many peak records dated 1950-01-01 or later have a recorded peak_va greater than 100,000 cfs? Blank peak_va values do not count.",
+ "answer_type": "number",
+ "answer": 29,
+ "difficulty": "easy",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nrows=list(csv.reader(open(D+\"/nwis_peak_delaware_trenton.csv\")))[2:]\nprint(sum(1 for r in rows if len(r)>4 and r[2]>=\"1950-01-01\" and r[4].strip() and float(r[4])>100000))",
+ "abs_tol": 0
+}

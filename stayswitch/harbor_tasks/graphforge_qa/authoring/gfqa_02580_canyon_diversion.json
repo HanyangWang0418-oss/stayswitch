@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02580_canyon_diversion",
+ "source_task_id": "graphseed_002580_graph_intent_28583f50bf3281bf",
+ "files": [
+  "streamflow_canyon_creek_13159800.json",
+  "mtnhome_wmis_2023_water_use.csv"
+ ],
+ "question": "Using the source report streamflow_canyon_creek_13159800.json, sum the daily mean discharge (ft3/s) over every day listed (Nov 1, 2022 to Oct 31, 2023) and convert to acre-feet at 1 cfs-day = 1.9835 acre-feet. From mtnhome_wmis_2023_water_use.csv, total Volume2023_AF for all records whose Source is CANYON CREEK, LITTLE CANYON CREEK or BENNETT CREEK. What percent of the total streamflow volume do these withdrawals represent? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 0.46,
+ "difficulty": "hard",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nd=json.load(open(D+\"/streamflow_canyon_creek_13159800.json\"))\nvals=d[\"value\"][\"timeSeries\"][0][\"values\"][0][\"value\"]\naf=sum(float(v[\"value\"]) for v in vals if float(v[\"value\"])>=0)*1.9835\nw=list(csv.DictReader(open(D+\"/mtnhome_wmis_2023_water_use.csv\")))\ns=sum(float(r[\"Volume2023_AF\"]) for r in w if r[\"Source\"] in (\"CANYON CREEK\",\"LITTLE CANYON CREEK\",\"BENNETT CREEK\"))\nprint(round(s/af*100,2))",
+ "abs_tol": 0.005
+}

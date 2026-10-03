@@ -1,0 +1,15 @@
+{
+ "id": "gfqa_00888_recall_share_make",
+ "source_task_id": "graphseed_000888_graph_intent_bcca40f67b755925",
+ "files": [
+  "toyota_camry_2018_recalls.json",
+  "honda_accord_2018_recalls.json",
+  "ford_f150_2018_recalls.json"
+ ],
+ "question": "Combine the recall records from toyota_camry_2018_recalls.json, honda_accord_2018_recalls.json and ford_f150_2018_recalls.json. What percentage of all records were received (ReportReceivedDate, DD/MM/YYYY) in 2021 or later? Round to 1 decimal.",
+ "answer_type": "number",
+ "answer": 39.4,
+ "difficulty": "easy",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nn=0;k=0\nfor f in ['toyota_camry_2018_recalls.json','honda_accord_2018_recalls.json','ford_f150_2018_recalls.json']:\n    for r in json.load(open(D+'/'+f))['results']:\n        n+=1;k+=int(r['ReportReceivedDate'][-4:])>=2021\nprint(round(k/n*100,1))\n",
+ "abs_tol": 0.05
+}

@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00943_roe_gap",
+ "source_task_id": "graphseed_000943_graph_intent_a0ac97f27236ca36",
+ "files": [
+  "piermont_bank_ubpr_computed_ratios.csv",
+  "cross_river_bank_financials.csv"
+ ],
+ "question": "From piermont_bank_ubpr_computed_ratios.csv take the mean ROE_pct over the four quarterly reports with REPDTE in 2024. From cross_river_bank_financials.csv take the mean ROE over the four quarterly reports with REPDTE in 2014. By how many percentage points does the Cross River 2014 mean exceed (positive) or fall below (negative) the Piermont 2024 mean? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 16.02,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\np=[float(r[\"ROE_pct\"]) for r in csv.DictReader(open(D+\"/piermont_bank_ubpr_computed_ratios.csv\")) if r[\"REPDTE\"].startswith(\"2024\")]\nc=[float(r[\"ROE\"]) for r in csv.DictReader(open(D+\"/cross_river_bank_financials.csv\")) if r[\"REPDTE\"].startswith(\"2014\")]\nprint(round(sum(c)/len(c)-sum(p)/len(p),2))",
+ "abs_tol": 0.01
+}

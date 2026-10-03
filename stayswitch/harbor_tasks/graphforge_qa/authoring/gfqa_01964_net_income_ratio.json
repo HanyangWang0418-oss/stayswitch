@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_01964_net_income_ratio",
+ "source_task_id": "graphseed_001964_graph_intent_73ae4a6d33ab5411",
+ "files": [
+  "fdic_fitb_financials.csv",
+  "peer_bank_credit_metrics.csv"
+ ],
+ "question": "Fifth Third Bank's row with REPDTE 20231231 in fdic_fitb_financials.csv reports full-year 2023 NETINC. Divide it by the median NETINC of all banks in peer_bank_credit_metrics.csv (REPDTE 20231231, ignoring blank NETINC). Give the ratio rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 1.91,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=pd.read_csv(D+'/fdic_fitb_financials.csv')\nq=pd.read_csv(D+'/peer_bank_credit_metrics.csv')\nx=f[f.REPDTE==20231231].NETINC.iloc[0]\nprint(round(float(x/q.NETINC.dropna().median()),2))",
+ "abs_tol": 0.005
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00025_bofa_liab_growth",
+ "source_task_id": "graphseed_000025_graph_intent_3cd0a9127fc3b572",
+ "files": [
+  "bofa_fdic_sdi_financials.json"
+ ],
+ "question": "From bofa_fdic_sdi_financials.json, compute the percentage growth in total liabilities (LIAB) from the earliest REPDTE to the latest REPDTE, and compare with percentage growth in equity (EQTOT) over the same span. Report the difference (LIAB growth % minus EQTOT growth %) in percentage points, rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nr=sorted([x['data'] for x in json.load(open(D+'/bofa_fdic_sdi_financials.json'))['data']],key=lambda d:d['REPDTE'])\na,b=r[0],r[-1]\nprint(round(100*(b['LIAB']/a['LIAB']-1)-100*(b['EQTOT']/a['EQTOT']-1),2))\n",
+ "answer": 7.09,
+ "abs_tol": 0.005
+}

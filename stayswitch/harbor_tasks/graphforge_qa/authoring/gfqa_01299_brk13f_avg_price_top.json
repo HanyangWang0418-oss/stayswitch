@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_01299_brk13f_avg_price_top",
+ "source_task_id": "graphseed_001299_graph_intent_d5f82636f29285f1",
+ "files": [
+  "berkshire_13f_q4_2024_holdings.csv"
+ ],
+ "question": "In berkshire_13f_q4_2024_holdings.csv, aggregate shares and valueUSD by nameOfIssuer (summing all rows). Among issuers whose total shares exceed 50 million, which issuer has the highest implied value per share (total valueUSD / total shares)? Give the issuer name exactly as in the file.",
+ "answer_type": "string",
+ "answer": "AMERICAN EXPRESS CO",
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/berkshire_13f_q4_2024_holdings.csv');g=a.groupby('nameOfIssuer')[['shares','valueUSD']].sum();g=g[g.shares>50e6];print((g.valueUSD/g.shares).idxmax())\n",
+ "difficulty": "medium"
+}

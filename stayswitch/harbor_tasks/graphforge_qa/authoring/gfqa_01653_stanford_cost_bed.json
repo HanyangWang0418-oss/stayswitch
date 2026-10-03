@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_01653_stanford_cost_bed",
+ "source_task_id": "graphseed_001653_graph_intent_1716169cd11187c3",
+ "files": [
+  "stanford_cost_report_2022.json",
+  "stanford_cost_report_2023.json"
+ ],
+ "question": "Using the Stanford Health Care cost reports stanford_cost_report_2022.json (FY beginning 09/01/2022) and stanford_cost_report_2023.json (FY beginning 09/01/2023), compute 'Total Costs' divided by 'Total Bed Days Available' for each year. What is the percentage change in that cost per available bed day from the 2022 report to the 2023 report? Round to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=lambda y:json.load(open(D+'/stanford_cost_report_%d.json'%y))\ng=lambda d:float(d['Total Costs'])/float(d['Total Bed Days Available'])\nprint(round(100*(g(f(2023))/g(f(2022))-1),2))\n",
+ "answer": 7.11,
+ "abs_tol": 0.005
+}

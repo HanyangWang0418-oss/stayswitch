@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00178_la_tax_liability",
+ "source_task_id": "graphseed_000178_graph_intent_8c2f4699a69da8e6",
+ "files": [
+  "state_corporate_tax_rates_2024.csv"
+ ],
+ "question": "Using state_corporate_tax_rates_2024.csv, each row gives a marginal rate that applies to taxable income above the bracket threshold in the 'Brackets' column (up to the next threshold of the same state). Compute the total Louisiana corporate income tax on $400,000 of taxable income, in dollars, rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 26000.0,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nrows=[x for x in csv.reader(open(D+'/state_corporate_tax_rates_2024.csv'))][1:]\nb=[(float(x[3].replace('$','').replace(',','')),float(x[1].rstrip('%'))/100) for x in rows if x[0].startswith('Louisiana')]\nb.sort();inc=400000;t=0\nfor i,(lo,r) in enumerate(b):\n    hi=b[i+1][0] if i+1<len(b) else float('inf')\n    t+=max(0,min(inc,hi)-lo)*r\nprint(round(t,2))\n",
+ "abs_tol": 0.005
+}

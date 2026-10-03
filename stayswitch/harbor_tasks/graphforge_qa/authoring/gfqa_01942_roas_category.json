@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_01942_roas_category",
+ "source_task_id": "graphseed_001942_graph_intent_528ecf910108660f",
+ "files": [
+  "marketing_campaign_metrics.csv"
+ ],
+ "question": "Using the source report marketing_campaign_metrics.csv (daily campaign metrics for February 2021), aggregate by the 'category' column: ROAS = total revenue divided by total mark_spent. Which category has the highest ROAS? Give the category name exactly as it appears in the data.",
+ "answer_type": "string",
+ "answer": "influencer",
+ "difficulty": "easy",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nimport collections\nr=list(csv.DictReader(open(D+'/marketing_campaign_metrics.csv')))\ns=collections.defaultdict(float);v=collections.defaultdict(float)\nfor x in r:\n    s[x['category']]+=float(x['mark_spent']);v[x['category']]+=float(x['revenue'])\nprint(max(s,key=lambda k:v[k]/s[k]))\n"
+}

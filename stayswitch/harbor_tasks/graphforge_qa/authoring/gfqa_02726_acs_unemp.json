@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_02726_acs_unemp",
+ "source_task_id": "graphseed_002726_graph_intent_e8b4c87f445a4ee4",
+ "files": [
+  "census_acs_oilgas_states.json"
+ ],
+ "question": "In census_acs_oilgas_states.json (ACS 2024 1-year, table B23025), compute each state's unemployment rate as Unemployed (B23025005) divided by Civilian labor force (B23025003). Which state (name as in the geography section) has the highest rate?",
+ "answer_type": "string",
+ "difficulty": "easy",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nj=json.load(open(D+'/census_acs_oilgas_states.json'))\nr={g:v['B23025']['estimate']['B23025005']/v['B23025']['estimate']['B23025003'] for g,v in j['data'].items()}\nprint(j['geography'][max(r,key=r.get)]['name'])\n",
+ "answer": "New Mexico"
+}

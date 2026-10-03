@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_02855_ohio_roe_leader",
+ "source_task_id": "graphseed_002855_graph_intent_61a6d06417705ffb",
+ "files": [
+  "peer_ohio_banks_2023q4.csv"
+ ],
+ "question": "In peer_ohio_banks_2023q4.csv, among banks with ASSET below 100,000 (and a non-blank ROE), which bank NAME has the highest ROE?",
+ "answer_type": "string",
+ "answer": "SPRING VALLEY BANK",
+ "difficulty": "easy",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nr=[x for x in csv.DictReader(open(D+\"/peer_ohio_banks_2023q4.csv\")) if float(x[\"ASSET\"])<100000 and x[\"ROE\"].strip()]\nprint(max(r,key=lambda x:float(x[\"ROE\"]))[\"NAME\"])"
+}

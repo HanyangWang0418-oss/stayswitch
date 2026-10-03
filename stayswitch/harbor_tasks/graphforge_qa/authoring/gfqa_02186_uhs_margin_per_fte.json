@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02186_uhs_margin_per_fte",
+ "source_task_id": "graphseed_002186_graph_intent_f77392e9f437d725",
+ "files": [
+  "cms_cost_report_uh_fy2023.json",
+  "cms_cost_report_uh_fy2022.json"
+ ],
+ "question": "Using cms_cost_report_uh_fy2022.json and cms_cost_report_uh_fy2023.json, compute Net Patient Revenue per FTE employee on payroll ('FTE - Employees on Payroll') for each year, then give the FY2023 value minus FY2022 value in dollars, rounded to the nearest dollar.",
+ "answer_type": "number",
+ "answer": 21700.0,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\ndef f(n):\n    d=json.load(open(D+'/'+n))[0];return float(d['Net Patient Revenue'])/float(d['FTE - Employees on Payroll'])\nprint(round(f('cms_cost_report_uh_fy2023.json')-f('cms_cost_report_uh_fy2022.json')))\n",
+ "abs_tol": 1
+}

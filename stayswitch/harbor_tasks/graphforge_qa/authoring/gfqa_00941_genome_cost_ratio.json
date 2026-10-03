@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00941_genome_cost_ratio",
+ "source_task_id": "graphseed_000941_graph_intent_f4cf47f546b66785",
+ "files": [
+  "sequencing_costs_datahub.csv"
+ ],
+ "question": "Using sequencing_costs_datahub.csv, find the mean 'Cost per Genome' across all rows dated 2008 (Date starting with 2008), and the mean across all rows dated 2012. By what factor did the 2008 mean exceed the 2012 mean (2008 mean divided by 2012 mean)? Round to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\ns=pd.read_csv(D+'/sequencing_costs_datahub.csv')\na=s[s.Date.str.startswith('2008')]['Cost per Genome'].mean();b=s[s.Date.str.startswith('2012')]['Cost per Genome'].mean()\nprint(round(a/b,2))\n",
+ "answer": 210.59,
+ "abs_tol": 0.005
+}

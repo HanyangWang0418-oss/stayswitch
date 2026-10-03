@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02186_uhs_current_ratio_growth",
+ "source_task_id": "graphseed_002186_graph_intent_f77392e9f437d725",
+ "files": [
+  "cms_cost_report_uh_fy2023.json",
+  "cms_cost_report_uh_fy2022.json"
+ ],
+ "question": "Using cms_cost_report_uh_fy2022.json and cms_cost_report_uh_fy2023.json, compute the current ratio (Total Current Assets / Total Current Liabilities) for each year, and report the percentage change from FY2022 to FY2023 rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": -18.79,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\ndef cr(f):\n    d=json.load(open(D+'/'+f))[0];return float(d['Total Current Assets'])/float(d['Total Current Liabilities'])\nprint(round((cr('cms_cost_report_uh_fy2023.json')/cr('cms_cost_report_uh_fy2022.json')-1)*100,2))\n",
+ "abs_tol": 0.005
+}

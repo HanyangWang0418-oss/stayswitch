@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02031_ucd_hcahps_always_gap",
+ "source_task_id": "graphseed_002031_graph_intent_4af8dad87e48b1c4",
+ "files": [
+  "uc_davis_hcahps_scores.csv",
+  "state_hcahps_averages_ca.csv"
+ ],
+ "question": "Using uc_davis_hcahps_scores.csv (column hcahps_answer_percent) and state_hcahps_averages_ca.csv (column hcahps_answer_percent), match rows on hcahps_measure_id for measures ending in '_A_P' (the 'Always' response share) that have a numeric percent in both files. What is the average of (UC Davis percent minus California state percent) across those measures, in percentage points, rounded to 2 decimals?",
+ "answer_type": "number",
+ "answer": -0.69,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/uc_davis_hcahps_scores.csv');b=pd.read_csv(D+'/state_hcahps_averages_ca.csv')\na=a[a.hcahps_measure_id.str.endswith('_A_P')][['hcahps_measure_id','hcahps_answer_percent']];b=b[b.hcahps_measure_id.str.endswith('_A_P')][['hcahps_measure_id','hcahps_answer_percent']]\nm=a.merge(b,on='hcahps_measure_id',suffixes=('_u','_s'))\nfor c in ['hcahps_answer_percent_u','hcahps_answer_percent_s']: m[c]=pd.to_numeric(m[c],errors='coerce')\nm=m.dropna();print(round((m.hcahps_answer_percent_u-m.hcahps_answer_percent_s).mean(),2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}

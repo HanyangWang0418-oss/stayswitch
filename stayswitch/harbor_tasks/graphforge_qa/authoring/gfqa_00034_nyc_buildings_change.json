@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00034_nyc_buildings_change",
+ "source_task_id": "graphseed_000034_graph_intent_f869fb2516121f51",
+ "files": [
+  "nyc_municipal_ghg_inventory.csv"
+ ],
+ "question": "In nyc_municipal_ghg_inventory.csv (NYC municipal operations GHG inventory), sum the 'FY 2006 tCO2e' and 'FY 2024 tCO2e' columns over all rows with Main Sector 'Buildings'. What is the percentage change from FY 2006 to FY 2024 (negative = reduction)? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": -25.07,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/nyc_municipal_ghg_inventory.csv')))\nb=[x for x in r if x['Main Sector']=='Buildings']\na=sum(float(x['FY 2006 tCO2e']) for x in b);c=sum(float(x['FY 2024 tCO2e']) for x in b)\nprint(round((c/a-1)*100,2))\n",
+ "abs_tol": 0.005
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00199_epa_ky_good_share",
+ "source_task_id": "graphseed_000199_graph_intent_f4ba62729f8bcc4e",
+ "files": [
+  "epa_aqi_by_county_2021_in_ky.csv"
+ ],
+ "question": "In epa_aqi_by_county_2021_in_ky.csv, restrict to rows where State is Kentucky. Compute the share of monitored days that were Good: total Good Days divided by total Days with AQI, summed over those counties, as a percentage rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 73.67,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/epa_aqi_by_county_2021_in_ky.csv');a=a[a.State=='Kentucky'];print(round(a['Good Days'].sum()/a['Days with AQI'].sum()*100,2))\n",
+ "difficulty": "easy",
+ "abs_tol": 0.005
+}

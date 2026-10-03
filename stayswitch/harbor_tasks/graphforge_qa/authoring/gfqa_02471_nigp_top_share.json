@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02471_nigp_top_share",
+ "source_task_id": "graphseed_002471_graph_intent_8eb002e299fa5a47",
+ "files": [
+  "eva_spend_by_nigp_commodity_2024.csv"
+ ],
+ "question": "Using eva_spend_by_nigp_commodity_2024.csv, rank the commodity codes by total_spend. What share of the file's overall total_spend (all 100 rows) is accounted for by the top 10 commodities? Give the answer as a percent rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 73.1,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nr=list(csv.DictReader(open(D+\"/eva_spend_by_nigp_commodity_2024.csv\")))\ns=sorted((float(x[\"total_spend\"]) for x in r),reverse=True)\nprint(round(sum(s[:10])/sum(s)*100,2))",
+ "abs_tol": 0.01
+}

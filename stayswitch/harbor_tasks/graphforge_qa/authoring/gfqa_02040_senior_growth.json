@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_02040_senior_growth",
+ "source_task_id": "graphseed_002040_graph_intent_dc7b6cba13cbec0c",
+ "files": [
+  "nyc_population_projections_2010_2040.csv"
+ ],
+ "question": "In nyc_population_projections_2010_2040.csv, among the five boroughs (exclude the New York City aggregate), which borough has the largest percent growth in its '65 and over' population from 2010 to 2040? Answer with the borough name.",
+ "answer_type": "string",
+ "answer": "Staten Island",
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/nyc_population_projections_2010_2040.csv')\nd['Borough']=d.Borough.str.strip();d['Age Group']=d['Age Group'].str.strip()\nx=d[(d['Age Group']=='65 and over')&(d.Borough!='New York City')].copy()\nx['g']=x['2040']/x['2010']\nprint(x.loc[x.g.idxmax(),'Borough'])"
+}

@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00331_chargeoff_rate",
+ "source_task_id": "graphseed_000331_graph_intent_f0da5aab4e66fbb1",
+ "files": [
+  "rbtc_12q_loan_portfolio.csv",
+  "rbtc_12q_capital_ratios.csv"
+ ],
+ "question": "Using rbtc_12q_loan_portfolio.csv and rbtc_12q_capital_ratios.csv (Republic Bank & Trust, joined on ID), restrict to the four quarter-ends in calendar year 2025 (REPDTE 2025xxxx). Compute the sum of NTLNLS (net loan charge-offs) over those quarters divided by the average LNLSNET (net loans) over the same quarters, expressed as a percentage. Round to 3 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nl=pd.read_csv(D+'/rbtc_12q_loan_portfolio.csv',dtype={'REPDTE':str})\nc=pd.read_csv(D+'/rbtc_12q_capital_ratios.csv',dtype={'REPDTE':str})\nm=l.merge(c[['ID']],on='ID')\nm=m[m.REPDTE.str.startswith('2025')]\nprint(round(100*m.NTLNLS.sum()/m.LNLSNET.mean(),3))\n",
+ "answer": 1.973,
+ "abs_tol": 0.0005
+}

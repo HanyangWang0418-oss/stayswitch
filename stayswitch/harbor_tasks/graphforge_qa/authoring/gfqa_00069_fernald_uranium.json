@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00069_fernald_uranium",
+ "source_task_id": "graphseed_000069_graph_intent_44f25267b87bef20",
+ "files": [
+  "wqp_fernald_uranium_results.csv"
+ ],
+ "question": "In wqp_fernald_uranium_results.csv (USGS water-quality uranium results near Fernald), ignore rows with a blank ResultMeasureValue and keep only those reported in ug/l. How many distinct MonitoringLocationIdentifier values have at least one such result above 2.0 ug/l?",
+ "answer_type": "number",
+ "answer": 8.0,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/wqp_fernald_uranium_results.csv')))\ns={x['MonitoringLocationIdentifier'] for x in r if x['ResultMeasureValue'].strip() and x['ResultMeasure/MeasureUnitCode']=='ug/l' and float(x['ResultMeasureValue'])>2.0}\nprint(len(s))\n",
+ "abs_tol": 0
+}

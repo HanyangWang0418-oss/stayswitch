@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00446_roa_quarters",
+ "source_task_id": "graphseed_000446_graph_intent_31f085caba9f3f0c",
+ "files": [
+  "pnc_bank_financials_2021_2026.csv",
+  "dsrm_bank_financials.csv"
+ ],
+ "question": "Matching quarters by REPDTE across pnc_bank_financials_2021_2026.csv and dsrm_bank_financials.csv, in how many quarters (out of those present in both files) is the DSRM ROA strictly greater than the PNC ROA?",
+ "answer_type": "number",
+ "answer": 12,
+ "difficulty": "easy",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\na={r[\"REPDTE\"]:float(r[\"ROA\"]) for r in csv.DictReader(open(D+\"/pnc_bank_financials_2021_2026.csv\"))}\nb={r[\"REPDTE\"]:float(r[\"ROA\"]) for r in csv.DictReader(open(D+\"/dsrm_bank_financials.csv\"))}\nprint(sum(1 for k in a if k in b and b[k]>a[k]))",
+ "abs_tol": 0
+}

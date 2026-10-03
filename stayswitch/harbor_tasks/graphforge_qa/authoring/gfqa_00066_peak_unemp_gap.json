@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00066_peak_unemp_gap",
+ "source_task_id": "graphseed_000066_graph_intent_0e7cde6972aac8c6",
+ "files": [
+  "2024_severely_adverse_domestic.csv",
+  "2024_supervisory_baseline_domestic.csv"
+ ],
+ "question": "Using 2024_severely_adverse_domestic.csv and 2024_supervisory_baseline_domestic.csv, find the quarter in which the severely adverse unemployment rate is highest. What is the gap (in percentage points) between the severely adverse unemployment rate and the baseline unemployment rate in that same quarter?  Round to 1 decimal.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/2024_severely_adverse_domestic.csv');b=pd.read_csv(D+'/2024_supervisory_baseline_domestic.csv')\nm=a.merge(b,on='Date',suffixes=('_a','_b'))\nr=m.loc[m['Unemployment rate_a'].idxmax()]\nprint(round(r['Unemployment rate_a']-r['Unemployment rate_b'],1))\n",
+ "answer": 5.8,
+ "abs_tol": 0.05
+}

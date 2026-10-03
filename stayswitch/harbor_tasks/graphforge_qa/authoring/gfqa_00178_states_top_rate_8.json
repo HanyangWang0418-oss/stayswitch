@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00178_states_top_rate_8",
+ "source_task_id": "graphseed_000178_graph_intent_8c2f4699a69da8e6",
+ "files": [
+  "state_corporate_tax_rates_2024.csv"
+ ],
+ "question": "In state_corporate_tax_rates_2024.csv, take each jurisdiction's highest listed corporate rate (ignore rows with a blank rate; strip footnote markers such as '(a)' from names so a jurisdiction is counted once). How many jurisdictions have a top rate strictly above 8.0%? Also count Washington, D.C. as a jurisdiction.",
+ "answer_type": "number",
+ "answer": 11.0,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nrows=[x for x in csv.reader(open(D+'/state_corporate_tax_rates_2024.csv'))][1:]\nimport re\nm={}\nfor x in rows:\n    if x[1].strip():\n        n=re.sub(r'\\s*\\(.*\\)','',x[0]).strip();m[n]=max(m.get(n,0),float(x[1].rstrip('%')))\nprint(sum(1 for v in m.values() if v>8.0))\n",
+ "abs_tol": 0
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01942_fb_cost_per_order",
+ "source_task_id": "graphseed_001942_graph_intent_528ecf910108660f",
+ "files": [
+  "marketing_campaign_metrics.csv"
+ ],
+ "question": "In marketing_campaign_metrics.csv, consider every campaign whose campaign_name begins with 'facebook' when compared case-insensitively (note the data has inconsistent capitalization). Compute total mark_spent divided by total orders across all their daily rows, rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 6500.68,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/marketing_campaign_metrics.csv')))\nr=[x for x in r if x['campaign_name'].lower().startswith('facebook')]\nprint(round(sum(float(x['mark_spent']) for x in r)/sum(float(x['orders']) for x in r),2))\n",
+ "abs_tol": 0.005
+}

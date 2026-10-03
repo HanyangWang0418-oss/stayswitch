@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00754_ch4_share",
+ "source_task_id": "graphseed_000754_graph_intent_4f141c1aa2d05c04",
+ "files": [
+  "williams_ghgrp_emissions_2023.csv"
+ ],
+ "question": "In williams_ghgrp_emissions_2023.csv, restrict to facilities whose 'Industry Type (subparts)' contains 'W-PROC'. What percent of their combined 'Total reported direct emissions (mtCO2e)' is the combined 'CH4 emissions' column? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 2.48,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/williams_ghgrp_emissions_2023.csv')\nd=d[d['Industry Type (subparts)'].str.contains('W-PROC',na=False)]\nprint(round(float(100*d['CH4 emissions'].sum()/d['Total reported direct emissions (mtCO2e)'].sum()),2))",
+ "abs_tol": 0.005
+}

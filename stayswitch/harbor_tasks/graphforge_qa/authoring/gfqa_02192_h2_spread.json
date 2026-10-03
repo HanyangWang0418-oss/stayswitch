@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02192_h2_spread",
+ "source_task_id": "graphseed_002192_graph_intent_cd8505820c0b0715",
+ "files": [
+  "treasury_yield_curve_2023.csv"
+ ],
+ "question": "In treasury_yield_curve_2023.csv, take only trading days dated July 1 through December 31, 2023. What is the average daily spread of the 10 Yr yield minus the 3 Mo yield over those days, in percentage points, rounded to 2 decimals?",
+ "answer_type": "number",
+ "answer": -1.23,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/treasury_yield_curve_2023.csv')\nd['Date']=pd.to_datetime(d['Date'])\nh=d[d.Date.dt.month>=7]\nprint(round(float((h['10 Yr']-h['3 Mo']).mean()),2))",
+ "abs_tol": 0.005
+}

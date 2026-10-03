@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02392_pvgis_yield",
+ "source_task_id": "graphseed_002392_graph_intent_9736f9dd48993921",
+ "files": [
+  "pvgis_austin_tx_production.json"
+ ],
+ "question": "In pvgis_austin_tx_production.json, look at the monthly fixed-mount outputs. For months where in-plane irradiation H(i)_m exceeds 150 kWh/m2, divide total energy E_m (kWh) by total H(i)_m. Report this ratio rounded to 4 decimals.",
+ "answer_type": "number",
+ "answer": 3.7133,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nm=json.load(open(D+\"/pvgis_austin_tx_production.json\"))[\"outputs\"][\"monthly\"][\"fixed\"]\ns=[x for x in m if x[\"H(i)_m\"]>150]\nprint(round(sum(x[\"E_m\"] for x in s)/sum(x[\"H(i)_m\"] for x in s),4))",
+ "abs_tol": 5e-05
+}

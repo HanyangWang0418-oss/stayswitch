@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02471_nigp_avg_order",
+ "source_task_id": "graphseed_002471_graph_intent_8eb002e299fa5a47",
+ "files": [
+  "eva_spend_by_nigp_commodity_2024.csv"
+ ],
+ "question": "In eva_spend_by_nigp_commodity_2024.csv, among commodities with order_count of at least 1,000, compute average spend per order (total_spend / order_count). What is the NIGP # of the commodity with the highest average spend per order?",
+ "answer_type": "number",
+ "answer": 91200,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nr=list(csv.DictReader(open(D+\"/eva_spend_by_nigp_commodity_2024.csv\")))\nc=[x for x in r if float(x[\"order_count\"])>=1000]\nb=max(c,key=lambda x:float(x[\"total_spend\"])/float(x[\"order_count\"]))\nprint(b[\"NIGP #\"])",
+ "abs_tol": 0
+}

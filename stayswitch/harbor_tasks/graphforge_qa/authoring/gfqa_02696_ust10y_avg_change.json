@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02696_ust10y_avg_change",
+ "source_task_id": "graphseed_002696_graph_intent_698ab295e221ad87",
+ "files": [
+  "treasury_yields_2026.csv",
+  "treasury_yields_2024.csv"
+ ],
+ "question": "Using the daily Treasury par yield curve reports treasury_yields_2024.csv and treasury_yields_2026.csv, compute the average daily 10 Yr yield across all rows in each file. By how many percentage points does the 2026 file's average exceed the 2024 file's average? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 0.17,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/treasury_yields_2024.csv');b=pd.read_csv(D+'/treasury_yields_2026.csv')\nprint(round(b['10 Yr'].mean()-a['10 Yr'].mean(),2))\n",
+ "difficulty": "easy",
+ "abs_tol": 0.005
+}

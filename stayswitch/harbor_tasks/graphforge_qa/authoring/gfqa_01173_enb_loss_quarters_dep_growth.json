@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01173_enb_loss_quarters_dep_growth",
+ "source_task_id": "graphseed_001173_graph_intent_a0d7858663c1920f",
+ "files": [
+  "fdic_financials_enb.csv"
+ ],
+ "question": "In fdic_financials_enb.csv (Eastern National Bank quarterly data, amounts in $ thousands), find the number of reporting dates with a negative NETINC value (as reported in the file) among reporting dates from 20230331 through 20260331 inclusive, then multiply that count by the percentage growth in total deposits (DEP) from the 20230331 report to the 20260331 report. Round the final product to 2 decimals.",
+ "answer_type": "number",
+ "answer": -865.98,
+ "difficulty": "hard",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/fdic_financials_enb.csv')))\nq=[x for x in r if '20230331'<=x['REPDTE']<='20260331']\nn=sum(1 for x in q if float(x['NETINC'])<0)\nd={x['REPDTE']:float(x['DEP']) for x in r}\ng=(d['20260331']/d['20230331']-1)*100\nprint(round(n*g,2))\n",
+ "abs_tol": 0.05
+}

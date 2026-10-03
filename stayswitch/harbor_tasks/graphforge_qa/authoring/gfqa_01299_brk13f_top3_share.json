@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01299_brk13f_top3_share",
+ "source_task_id": "graphseed_001299_graph_intent_d5f82636f29285f1",
+ "files": [
+  "berkshire_13f_q4_2024_holdings.csv"
+ ],
+ "question": "In berkshire_13f_q4_2024_holdings.csv, a single issuer may appear on several rows. Aggregate valueUSD by nameOfIssuer, then compute the combined value of the three largest issuers as a percentage of the total valueUSD of all rows. Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 56.15,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/berkshire_13f_q4_2024_holdings.csv');g=a.groupby('nameOfIssuer').valueUSD.sum().sort_values(ascending=False)\nprint(round(g.head(3).sum()/a.valueUSD.sum()*100,2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}

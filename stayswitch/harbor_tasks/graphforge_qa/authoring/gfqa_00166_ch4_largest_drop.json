@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00166_ch4_largest_drop",
+ "source_task_id": "graphseed_000166_graph_intent_22a9edf20bafc6cd",
+ "files": [
+  "ghg_inventory_energy_emissions_table_3-1.csv"
+ ],
+ "question": "In the CH4 block of ghg_inventory_energy_emissions_table_3-1.csv (rows between the 'CH4' row and the 'N2O' row, excluding International Bunker Fuels), which source had the largest absolute decline in emissions from 1990 to 2021 (MMT CO2 Eq.)? Answer with the source name.",
+ "answer_type": "string",
+ "answer": "Coal Mining",
+ "difficulty": "hard",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/ghg_inventory_energy_emissions_table_3-1.csv',header=None,dtype=str)\nd=d.iloc[:,1:]\nhdr=d.iloc[2].tolist()\nd.columns=hdr\nd=d.iloc[3:].reset_index(drop=True)\nd['Gas/Source']=d['Gas/Source'].astype(str)\nv=lambda i,y:float(str(d.loc[i,y]).replace(',',''))\nrow=lambda lab,start=0:int(d.index[(d['Gas/Source'].str.strip()==lab)&(d.index>=start)][0])\na=row('CH4');b=row('N2O',a)\nbest=None\nfor i in range(a+1,b):\n    nm=d.loc[i,'Gas/Source'].strip()\n    if nm.startswith('International Bunker'): continue\n    dec=v(i,'1990')-v(i,'2021')\n    if best is None or dec>best[0]: best=(dec,nm)\nprint(best[1])"
+}

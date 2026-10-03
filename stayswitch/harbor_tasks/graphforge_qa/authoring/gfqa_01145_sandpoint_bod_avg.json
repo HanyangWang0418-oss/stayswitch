@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01145_sandpoint_bod_avg",
+ "source_task_id": "graphseed_001145_graph_intent_a1160a8dca65f5cd",
+ "files": [
+  "sandpoint_echo_dmr_summary.json"
+ ],
+ "question": "In sandpoint_echo_dmr_summary.json (EPA ECHO discharge monitoring summary for the Sandpoint WWTP), look at the parameter 'BOD, 5-day, 20 deg. C [Effluent Gross]' sample_values and the parameter 'BOD, 5-day, 20 deg. C [Raw Sewage Influent]' sample_values. Using only entries with statistic 'MO AVG', compute the BOD percent removal = (1 - average effluent value / average influent value) * 100, rounded to 1 decimal.",
+ "answer_type": "number",
+ "answer": 67.4,
+ "difficulty": "hard",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nd=json.load(open(D+'/sandpoint_echo_dmr_summary.json'))['monitoring_summary']\ndef m(k):\n    v=[float(x['value']) for x in d[k]['sample_values'] if x['statistic']=='MO AVG'];return sum(v)/len(v)\ne=m('BOD, 5-day, 20 deg. C [Effluent Gross]');i=m('BOD, 5-day, 20 deg. C [Raw Sewage Influent]')\nprint(round((1-e/i)*100,1))\n",
+ "abs_tol": 0.05
+}

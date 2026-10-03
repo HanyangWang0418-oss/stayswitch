@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00066_gdp_cum_shortfall",
+ "source_task_id": "graphseed_000066_graph_intent_0e7cde6972aac8c6",
+ "files": [
+  "2024_severely_adverse_domestic.csv",
+  "2024_supervisory_baseline_domestic.csv"
+ ],
+ "question": "For the four quarters of 2025 only (Date 2025 Q1 to 2025 Q4), sum the 'Real GDP growth' values in each scenario file (2024_supervisory_baseline_domestic.csv and 2024_severely_adverse_domestic.csv). By how many percentage points does the baseline sum exceed the severely adverse sum? Round to 1 decimal.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/2024_severely_adverse_domestic.csv');b=pd.read_csv(D+'/2024_supervisory_baseline_domestic.csv')\nf=lambda d:d[d.Date.str.startswith('2025')]['Real GDP growth'].sum()\nprint(round(f(b)-f(a),1))\n",
+ "answer": 1.8,
+ "abs_tol": 0.05
+}

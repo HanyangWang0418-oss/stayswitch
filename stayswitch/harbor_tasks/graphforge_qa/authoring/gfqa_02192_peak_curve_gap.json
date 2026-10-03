@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_02192_peak_curve_gap",
+ "source_task_id": "graphseed_002192_graph_intent_cd8505820c0b0715",
+ "files": [
+  "treasury_yield_curve_2023.csv"
+ ],
+ "question": "In treasury_yield_curve_2023.csv, on which date (MM/DD/YYYY, as written in the file) was the 3 Mo yield highest above the 10 Yr yield, i.e. the largest (3 Mo minus 10 Yr)? If tied, take the latest date.",
+ "answer_type": "string",
+ "answer": "06/01/2023",
+ "difficulty": "hard",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/treasury_yield_curve_2023.csv')\nd['g']=d['3 Mo']-d['10 Yr']\nd['dt']=pd.to_datetime(d['Date'])\nm=d[d.g.round(6)==d.g.round(6).max()].sort_values('dt').iloc[-1]\nprint(m['Date'])"
+}

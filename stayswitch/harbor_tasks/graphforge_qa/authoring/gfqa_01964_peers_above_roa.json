@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_01964_peers_above_roa",
+ "source_task_id": "graphseed_001964_graph_intent_73ae4a6d33ab5411",
+ "files": [
+  "fdic_fitb_financials.csv",
+  "peer_bank_credit_metrics.csv"
+ ],
+ "question": "How many banks in peer_bank_credit_metrics.csv have a ROA strictly greater than the ROA that fdic_fitb_financials.csv reports for Fifth Third Bank as of REPDTE 20231231?",
+ "answer_type": "number",
+ "answer": 12,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=pd.read_csv(D+'/fdic_fitb_financials.csv')\nq=pd.read_csv(D+'/peer_bank_credit_metrics.csv')\nr=f[f.REPDTE==20231231].ROA.iloc[0]\nprint(int((q.ROA>r).sum()))",
+ "abs_tol": 0
+}

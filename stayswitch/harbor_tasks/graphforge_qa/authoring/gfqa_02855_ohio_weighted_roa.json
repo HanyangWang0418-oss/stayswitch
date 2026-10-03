@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02855_ohio_weighted_roa",
+ "source_task_id": "graphseed_002855_graph_intent_61a6d06417705ffb",
+ "files": [
+  "peer_ohio_banks_2023q4.csv"
+ ],
+ "question": "Using peer_ohio_banks_2023q4.csv, exclude NATIONWIDE TRUST CO FSB and compute the ASSET-weighted average ROA (sum of ROA x ASSET divided by sum of ASSET) over the remaining banks. Round to 3 decimals.",
+ "answer_type": "number",
+ "answer": 0.746,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nr=[x for x in csv.DictReader(open(D+\"/peer_ohio_banks_2023q4.csv\")) if x[\"NAME\"]!=\"NATIONWIDE TRUST CO FSB\"]\nprint(round(sum(float(x[\"ROA\"])*float(x[\"ASSET\"]) for x in r)/sum(float(x[\"ASSET\"]) for x in r),3))",
+ "abs_tol": 0.0005
+}

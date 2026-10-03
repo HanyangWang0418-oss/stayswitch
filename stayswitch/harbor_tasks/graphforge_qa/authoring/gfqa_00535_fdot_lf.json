@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00535_fdot_lf",
+ "source_task_id": "graphseed_000535_graph_intent_a23e9d4874ad7b82",
+ "files": [
+  "fdot_biditems_e8v40.csv"
+ ],
+ "question": "In fdot_biditems_e8v40.csv (bid items), consider rows with Unit equal to 'LF'. Sum the Quantity of those rows whose ShortDesc contains the text 'SIGN' or 'BARRIER' (case-sensitive). Also count the LF rows with Quantity greater than 1000. Report the sum of the Quantity total and the count, as one number rounded to 1 decimal.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/fdot_biditems_e8v40.csv',dtype=str)\nd['Quantity']=d.Quantity.astype(float)\nl=d[d.Unit.str.strip()=='LF']\ns=l[l.ShortDesc.str.contains('SIGN|BARRIER')].Quantity.sum()\nprint(round(s+(l.Quantity>1000).sum(),1))\n",
+ "answer": 48223.0,
+ "abs_tol": 0.05
+}

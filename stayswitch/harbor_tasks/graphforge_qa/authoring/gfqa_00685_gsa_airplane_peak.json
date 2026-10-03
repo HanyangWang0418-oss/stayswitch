@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00685_gsa_airplane_peak",
+ "source_task_id": "graphseed_000685_graph_intent_0a7b2305a1661703",
+ "files": [
+  "gsa_pov_mileage_rates.csv"
+ ],
+ "question": "In gsa_pov_mileage_rates.csv, find the effective_date with the highest 'airplane' rate. At that date, what is the ratio of the 'automobile' rate to the 'moving' rate? Round to 3 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\ng=pd.read_csv(D+'/gsa_pov_mileage_rates.csv')\nr=g.loc[g.airplane.idxmax()]\nprint(round(r.automobile/r.moving,3))\n",
+ "answer": 3.234,
+ "abs_tol": 0.0005
+}

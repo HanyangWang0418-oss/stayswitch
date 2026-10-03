@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02031_ucd_psi_better_worse",
+ "source_task_id": "graphseed_002031_graph_intent_4af8dad87e48b1c4",
+ "files": [
+  "uc_davis_complications_deaths.csv",
+  "national_complications_deaths_benchmarks.csv"
+ ],
+ "question": "Using uc_davis_complications_deaths.csv and national_complications_deaths_benchmarks.csv (joined on measure_id), restrict to patient-safety measures with measure_id beginning 'PSI_' excluding PSI_90 and PSI_04. How many of these have a hospital score strictly above the national_rate?",
+ "answer_type": "number",
+ "answer": 8.0,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/uc_davis_complications_deaths.csv');b=pd.read_csv(D+'/national_complications_deaths_benchmarks.csv')\nm=a.merge(b[['measure_id','national_rate']],on='measure_id');m=m[m.measure_id.str.startswith('PSI_')&~m.measure_id.isin(['PSI_90','PSI_04'])]\nprint(int((m.score>m.national_rate).sum()))\n",
+ "difficulty": "medium",
+ "abs_tol": 0
+}

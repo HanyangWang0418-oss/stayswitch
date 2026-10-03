@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00943_cross_river_growth",
+ "source_task_id": "graphseed_000943_graph_intent_a0ac97f27236ca36",
+ "files": [
+  "cross_river_bank_financials.csv",
+  "piermont_bank_ubpr_computed_ratios.csv"
+ ],
+ "question": "In cross_river_bank_financials.csv, find the quarter with the highest ASSET and the quarter with the lowest ASSET. Take the highest ASSET divided by the Piermont TOTAL_ASSETS in piermont_bank_ubpr_computed_ratios.csv for its first report (earliest REPDTE), and report the ratio, rounded to 3 decimals (both files are in the same units).",
+ "answer_type": "number",
+ "answer": 10.286,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nc=[float(r[\"ASSET\"]) for r in csv.DictReader(open(D+\"/cross_river_bank_financials.csv\"))]\np=sorted(csv.DictReader(open(D+\"/piermont_bank_ubpr_computed_ratios.csv\")),key=lambda r:r[\"REPDTE\"])\nprint(round(max(c)/float(p[0][\"TOTAL_ASSETS\"]),3))",
+ "abs_tol": 0.0005
+}

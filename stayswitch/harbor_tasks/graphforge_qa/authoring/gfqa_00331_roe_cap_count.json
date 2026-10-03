@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00331_roe_cap_count",
+ "source_task_id": "graphseed_000331_graph_intent_f0da5aab4e66fbb1",
+ "files": [
+  "rbtc_12q_loan_portfolio.csv",
+  "rbtc_12q_capital_ratios.csv"
+ ],
+ "question": "Join rbtc_12q_capital_ratios.csv and rbtc_12q_loan_portfolio.csv on ID. Count the quarters in which ROE is greater than 15 AND the net charge-off ratio NTLNLSR (from the loan portfolio file) is below 0.9.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nl=pd.read_csv(D+'/rbtc_12q_loan_portfolio.csv')\nc=pd.read_csv(D+'/rbtc_12q_capital_ratios.csv')\nm=l.merge(c[['ID','ROE']],on='ID')\nprint(int(((m.ROE>15)&(m.NTLNLSR<0.9)).sum()))\n",
+ "answer": 2.0,
+ "abs_tol": 0
+}

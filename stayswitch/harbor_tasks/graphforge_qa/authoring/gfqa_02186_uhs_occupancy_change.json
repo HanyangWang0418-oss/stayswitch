@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02186_uhs_occupancy_change",
+ "source_task_id": "graphseed_002186_graph_intent_f77392e9f437d725",
+ "files": [
+  "cms_cost_report_uh_fy2023.json",
+  "cms_cost_report_uh_fy2022.json"
+ ],
+ "question": "From cms_cost_report_uh_fy2022.json and cms_cost_report_uh_fy2023.json (CMS hospital cost reports for University Health System), compute each year's overall bed occupancy = 'Total Days (V + XVIII + XIX + Unknown)' divided by 'Total Bed Days Available', as a percentage. Report the FY2023 minus FY2022 change in percentage points, rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 4.01,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\ndef occ(f):\n    d=json.load(open(D+'/'+f))[0];return float(d['Total Days (V + XVIII + XIX + Unknown)'])/float(d['Total Bed Days Available'])*100\nprint(round(occ('cms_cost_report_uh_fy2023.json')-occ('cms_cost_report_uh_fy2022.json'),2))\n",
+ "abs_tol": 0.005
+}

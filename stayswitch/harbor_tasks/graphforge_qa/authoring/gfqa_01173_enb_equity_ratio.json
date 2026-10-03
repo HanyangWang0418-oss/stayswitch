@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01173_enb_equity_ratio",
+ "source_task_id": "graphseed_001173_graph_intent_a0d7858663c1920f",
+ "files": [
+  "fdic_financials_enb.csv"
+ ],
+ "question": "Using fdic_financials_enb.csv (quarterly FDIC call-report data for Eastern National Bank; REPDTE is YYYYMMDD, ASSET and EQ in $ thousands), compute the equity-to-assets ratio (EQ/ASSET, in percent) at each fiscal year-end (REPDTE ending in 1231) for 2019 through 2024 inclusive, and report the simple average of those six ratios, rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 8.58,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/fdic_financials_enb.csv')))\nv=[float(x['EQ'])/float(x['ASSET'])*100 for x in r if x['REPDTE'][4:]=='1231' and '2019'<=x['REPDTE'][:4]<='2024']\nassert len(v)==6\nprint(round(sum(v)/6,2))\n",
+ "abs_tol": 0.005
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01964_loan_ratio_shift",
+ "source_task_id": "graphseed_001964_graph_intent_73ae4a6d33ab5411",
+ "files": [
+  "fdic_fitb_financials.csv"
+ ],
+ "question": "In fdic_fitb_financials.csv, compute Net loans and leases (LNLSNET) divided by total assets (ASSET), as a percent, for REPDTE 20211231 and REPDTE 20251231. By how many percentage points did the ratio change (2025 minus 2021)? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 2.04,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=pd.read_csv(D+'/fdic_fitb_financials.csv').set_index('REPDTE')\nr=lambda k:100*f.loc[k,'LNLSNET']/f.loc[k,'ASSET']\nprint(round(float(r(20251231)-r(20211231)),2))",
+ "abs_tol": 0.005
+}

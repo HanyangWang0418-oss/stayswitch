@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00099_top_facility",
+ "source_task_id": "graphseed_000099_graph_intent_88e518d57063b458",
+ "files": [
+  "sparcs_sample_records.csv"
+ ],
+ "question": "In sparcs_sample_records.csv, which facility_name has the highest total of total_costs across its records, considering only records with length_of_stay of at most 3 days? Answer with the facility name.",
+ "answer_type": "string",
+ "answer": "LENOX HILL HOSPITAL",
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/sparcs_sample_records.csv')\nd=d[d.length_of_stay<=3]\nprint(d.groupby('facility_name').total_costs.sum().idxmax())"
+}

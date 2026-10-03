@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_02031_ucd_mortality_vs_national",
+ "source_task_id": "graphseed_002031_graph_intent_4af8dad87e48b1c4",
+ "files": [
+  "uc_davis_complications_deaths.csv",
+  "national_complications_deaths_benchmarks.csv"
+ ],
+ "question": "Using uc_davis_complications_deaths.csv and national_complications_deaths_benchmarks.csv (joined on measure_id), take the 30-day death-rate measures (measure_id beginning 'MORT_30'). For each, compute the national_rate minus the hospital's score. What is the average of these differences, in percentage points, rounded to 2 decimals?",
+ "answer_type": "number",
+ "answer": 1.77,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/uc_davis_complications_deaths.csv');b=pd.read_csv(D+'/national_complications_deaths_benchmarks.csv')\nm=a.merge(b[['measure_id','national_rate']],on='measure_id');m=m[m.measure_id.str.startswith('MORT_30')]\nprint(round((m.national_rate-m.score).mean(),2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02696_ust_inverted_days_2024",
+ "source_task_id": "graphseed_002696_graph_intent_698ab295e221ad87",
+ "files": [
+  "treasury_yields_2024.csv"
+ ],
+ "question": "In treasury_yields_2024.csv, count the trading days on which the 3 Mo yield was strictly higher than the 10 Yr yield (an inverted bill-to-bond curve) and the 2 Yr yield was also strictly higher than the 10 Yr yield. Report the count.",
+ "answer_type": "number",
+ "answer": 166.0,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/treasury_yields_2024.csv')\nprint(int(((a['3 Mo']>a['10 Yr'])&(a['2 Yr']>a['10 Yr'])).sum()))\n",
+ "difficulty": "medium",
+ "abs_tol": 0
+}

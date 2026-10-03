@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00574_equity_ratio_quarters",
+ "source_task_id": "graphseed_000574_graph_intent_05b0a3b99f7e51f8",
+ "files": [
+  "ffiec_bofa_financials.json",
+  "ffiec_jpmorgan_capital_data.json"
+ ],
+ "question": "The source reports ffiec_bofa_financials.json (Bank of America NA) and ffiec_jpmorgan_capital_data.json (JPMorgan Chase Bank NA) list quarterly ASSET and EQ (in dollars). For each report date (REPDTE) present in both files, compute equity-to-assets (EQ/ASSET). In how many common quarters is JPMorgan's ratio higher than Bank of America's?",
+ "answer_type": "number",
+ "difficulty": "easy",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\ndef L(f):\n    return {r['data']['REPDTE']:r['data'] for r in json.load(open(D+'/'+f))['data']}\nb=L('ffiec_bofa_financials.json');j=L('ffiec_jpmorgan_capital_data.json')\nn=0\nfor k in set(b)&set(j):\n    if j[k]['EQ']/j[k]['ASSET']>b[k]['EQ']/b[k]['ASSET']: n+=1\nprint(n)\n",
+ "answer": 3.0,
+ "abs_tol": 0
+}

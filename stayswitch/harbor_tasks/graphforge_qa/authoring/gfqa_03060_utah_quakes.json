@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_03060_utah_quakes",
+ "source_task_id": "graphseed_003060_graph_intent_216ab530384cd900",
+ "files": [
+  "utah_seismic_events_1980_1984.csv"
+ ],
+ "question": "In utah_seismic_events_1980_1984.csv, select events whose time falls in calendar years 1981 through 1983 inclusive, with type 'earthquake', mag of at least 3.5 and depth of at least 5.0 km. What is the mean mag of the selected events? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 3.81,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nr=list(csv.DictReader(open(D+\"/utah_seismic_events_1980_1984.csv\")))\nv=[float(x[\"mag\"]) for x in r if 1981<=int(x[\"time\"][:4])<=1983 and x[\"type\"]==\"earthquake\" and float(x[\"mag\"])>=3.5 and float(x[\"depth\"])>=5.0]\nprint(round(sum(v)/len(v),2))",
+ "abs_tol": 0.005
+}

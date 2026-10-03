@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00034_nyc_electricity_share",
+ "source_task_id": "graphseed_000034_graph_intent_f869fb2516121f51",
+ "files": [
+  "nyc_municipal_ghg_inventory.csv"
+ ],
+ "question": "In nyc_municipal_ghg_inventory.csv, for FY 2024 compute the share of total emissions (the row where Main Sector is 'Total', column 'FY 2024 tCO2e') that comes from rows whose Source is 'Electricity' (summed across all sectors). Express as a percentage rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 48.35,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/nyc_municipal_ghg_inventory.csv')))\nt=[float(x['FY 2024 tCO2e']) for x in r if x['Main Sector']=='Total'][0]\ne=sum(float(x['FY 2024 tCO2e']) for x in r if x['Source']=='Electricity' and x['Main Sector']!='Total')\nprint(round(e/t*100,2))\n",
+ "abs_tol": 0.005
+}

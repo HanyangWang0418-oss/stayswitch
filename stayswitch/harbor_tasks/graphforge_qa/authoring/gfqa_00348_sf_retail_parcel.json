@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00348_sf_retail_parcel",
+ "source_task_id": "graphseed_000348_graph_intent_4d57e5daf8215860",
+ "files": [
+  "sf_parcels_block3701.csv",
+  "sf_landuse_block3701.csv"
+ ],
+ "question": "Using sf_parcels_block3701.csv and sf_landuse_block3701.csv joined on mapblklot, among parcels that have a non-empty street_name in the parcels file, which parcel (mapblklot) has the largest 'total_comm' floor area in the land-use file? Give the mapblklot value.",
+ "answer_type": "string",
+ "answer": "3701065",
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\np=list(csv.DictReader(open(D+'/sf_parcels_block3701.csv')))\nl={x['mapblklot']:x for x in csv.DictReader(open(D+'/sf_landuse_block3701.csv'))}\nc=[x['mapblklot'] for x in p if x['street_name'].strip() and x['mapblklot'] in l]\nprint(max(c,key=lambda k:float(l[k]['total_comm'])))\n"
+}

@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00446_equity_ratio_gap",
+ "source_task_id": "graphseed_000446_graph_intent_31f085caba9f3f0c",
+ "files": [
+  "pnc_bank_financials_2021_2026.csv",
+  "dsrm_bank_financials.csv"
+ ],
+ "question": "For each bank file (pnc_bank_financials_2021_2026.csv and dsrm_bank_financials.csv), compute the equity-to-assets ratio EQ/ASSET x 100 for each quarter with REPDTE in 2023, then average the four quarters. How many percentage points higher is the DSRM average than the PNC average? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 76.06,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\ndef m(f):\n    v=[float(r[\"EQ\"])/float(r[\"ASSET\"])*100 for r in csv.DictReader(open(D+\"/\"+f)) if r[\"REPDTE\"].startswith(\"2023\")]\n    return sum(v)/len(v)\nprint(round(m(\"dsrm_bank_financials.csv\")-m(\"pnc_bank_financials_2021_2026.csv\"),2))",
+ "abs_tol": 0.01
+}

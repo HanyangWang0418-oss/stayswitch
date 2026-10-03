@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00250_svb_qoq",
+ "source_task_id": "graphseed_000250_graph_intent_61b7b2d94f2e993f",
+ "files": [
+  "svb_financials_q4_2022.json"
+ ],
+ "question": "In svb_financials_q4_2022.json, the records under 'data' (each with a nested 'data' object) give quarterly ASSET by REPDTE. Ordering by REPDTE, find the largest quarter-over-quarter percentage increase in ASSET. Round the percentage to 2 decimals.",
+ "answer_type": "number",
+ "answer": 23.21,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nd=json.load(open(D+\"/svb_financials_q4_2022.json\"))[\"data\"]\ns=sorted((x[\"data\"][\"REPDTE\"],float(x[\"data\"][\"ASSET\"])) for x in d)\nprint(round(max((s[i][1]/s[i-1][1]-1)*100 for i in range(1,len(s))),2))",
+ "abs_tol": 0.005
+}

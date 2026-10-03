@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01502_annarbor_youth",
+ "source_task_id": "graphseed_001502_graph_intent_a0d3dbea1870b3b5",
+ "files": [
+  "census_demographics.json"
+ ],
+ "question": "In census_demographics.json (Ann Arbor, MI, ACS 2024 5-year), table B01001 (Sex by Age), sum the estimates for ages 18 and 19, 20, 21, and 22 to 24 for both males (B01001007-B01001010) and females (B01001031-B01001034). What percentage of the total population (B01001001) is this group? Round to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nj=json.load(open(D+'/census_demographics.json'))\ne=list(j['data'].values())[0]['B01001']['estimate']\ns=sum(e['B01001%03d'%i] for i in list(range(7,11))+list(range(31,35)))\nprint(round(100*s/e['B01001001'],2))\n",
+ "answer": 32.2,
+ "abs_tol": 0.005
+}

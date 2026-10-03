@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_02696_ust_widest_2s10s_2026",
+ "source_task_id": "graphseed_002696_graph_intent_698ab295e221ad87",
+ "files": [
+  "treasury_yields_2026.csv"
+ ],
+ "question": "In treasury_yields_2026.csv, define the term spread as the 30 Yr yield minus the 2 Yr yield. On which date (as written in the Date column, MM/DD/YYYY) was this spread largest? If tied, use the earliest calendar date.",
+ "answer_type": "string",
+ "answer": "01/02/2026",
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/treasury_yields_2026.csv');a['s']=a['30 Yr']-a['2 Yr'];a['d']=pd.to_datetime(a['Date'],format='%m/%d/%Y')\nm=a['s'].max();print(a[a.s>m-1e-9].sort_values('d').iloc[0]['Date'])\n",
+ "difficulty": "medium"
+}

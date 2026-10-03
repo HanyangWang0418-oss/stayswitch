@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02726_acs_pooled_poverty",
+ "source_task_id": "graphseed_002726_graph_intent_e8b4c87f445a4ee4",
+ "files": [
+  "census_acs_oilgas_states.json"
+ ],
+ "question": "Using census_acs_oilgas_states.json (ACS 2024 1-year), pool all five states: divide the sum of B17001002 (population below poverty level) by the sum of B17001001 (poverty status universe), as a percentage. Then subtract the pooled value from the highest single-state poverty rate. Give the result in percentage points rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nj=json.load(open(D+'/census_acs_oilgas_states.json'))\nE=[v['B17001']['estimate'] for v in j['data'].values()]\np=100*sum(e['B17001002'] for e in E)/sum(e['B17001001'] for e in E)\nm=max(100*e['B17001002']/e['B17001001'] for e in E)\nprint(round(m-p,2))\n",
+ "answer": 5.93,
+ "abs_tol": 0.005
+}

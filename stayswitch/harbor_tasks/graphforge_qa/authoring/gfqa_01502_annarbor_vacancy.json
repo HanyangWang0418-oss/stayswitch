@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01502_annarbor_vacancy",
+ "source_task_id": "graphseed_001502_graph_intent_a0d3dbea1870b3b5",
+ "files": [
+  "census_demographics.json"
+ ],
+ "question": "In census_demographics.json (Ann Arbor, MI), the housing units total is B25001001 and occupied units are owner occupied (B25003002) plus renter occupied (B25003003). Compute the vacancy rate as (housing units minus occupied units) divided by housing units, as a percentage; then compute the renter share of occupied units. Report vacancy rate divided by renter share (ratio), rounded to 4 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nj=json.load(open(D+'/census_demographics.json'))\nd=list(j['data'].values())[0]\nh=d['B25001']['estimate']['B25001001'];o=d['B25003']['estimate']['B25003002'];r=d['B25003']['estimate']['B25003003']\nprint(round(((h-o-r)/h)/(r/(o+r)),4))\n",
+ "answer": 0.1314,
+ "abs_tol": 5e-05
+}

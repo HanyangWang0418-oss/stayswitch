@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00661_headroom",
+ "source_task_id": "graphseed_000661_graph_intent_d8706ed8aa24e8ce",
+ "files": [
+  "mdlg_violation_items.csv",
+  "osha_penalty_schedule_2024.json"
+ ],
+ "question": "For rows of mdlg_violation_items.csv with alj_assessed_penalty greater than 0, sum the gap between the 2024 statutory maximum per violation (osha_penalty_schedule_2024.json, matched by citation_type: Serious->serious, Willful->willful, Repeat->repeat) and alj_assessed_penalty. What is the total gap in dollars?",
+ "answer_type": "number",
+ "answer": 190140,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nimport json\nd=pd.read_csv(D+'/mdlg_violation_items.csv')\ns=json.load(open(D+'/osha_penalty_schedule_2024.json'))['violation_types']\nd=d[d.alj_assessed_penalty>0]\nm=d.citation_type.str.lower().map(lambda k:s[k]['statutory_max_per_violation'])\nprint(int((m-d.alj_assessed_penalty).sum()))",
+ "abs_tol": 0
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00317_nisar_nan_mean",
+ "source_task_id": "graphseed_000317_graph_intent_dde9f290fdb80062",
+ "files": [
+  "NISAR_GUNW_QA_SUMMARY.csv"
+ ],
+ "question": "In NISAR_GUNW_QA_SUMMARY.csv, take rows whose Check is exactly '% NaN pixels under threshold?' and whose Notes mention 'unwrappedInterferogram'. What is the average of the 'Actual' column across those rows? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 32.65,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/NISAR_GUNW_QA_SUMMARY.csv')))\nv=[float(x['Actual']) for x in r if x['Check']=='% NaN pixels under threshold?' and 'unwrappedInterferogram' in x['Notes']]\nprint(round(sum(v)/len(v),2))\n",
+ "abs_tol": 0.005
+}

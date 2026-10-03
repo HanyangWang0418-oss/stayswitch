@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00754_top_state",
+ "source_task_id": "graphseed_000754_graph_intent_4f141c1aa2d05c04",
+ "files": [
+  "williams_ghgrp_emissions_2023.csv"
+ ],
+ "question": "In williams_ghgrp_emissions_2023.csv, excluding facilities whose 'Industry Type (sectors)' is exactly 'Power Plants', which two-letter State has the highest summed 'Total reported direct emissions (mtCO2e)'?",
+ "answer_type": "string",
+ "answer": "AL",
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/williams_ghgrp_emissions_2023.csv')\nd=d[d['Industry Type (sectors)']!='Power Plants']\nprint(d.groupby('State')['Total reported direct emissions (mtCO2e)'].sum().idxmax())"
+}

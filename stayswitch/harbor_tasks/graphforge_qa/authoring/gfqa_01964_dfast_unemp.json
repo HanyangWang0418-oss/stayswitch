@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01964_dfast_unemp",
+ "source_task_id": "graphseed_001964_graph_intent_73ae4a6d33ab5411",
+ "files": [
+  "dfast_2024_severely_adverse_scenario.csv"
+ ],
+ "question": "In dfast_2024_severely_adverse_scenario.csv, what is the average Unemployment rate (percent) across the quarters in which the 10-year Treasury yield is at most 1.0 percent? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 8.74,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/dfast_2024_severely_adverse_scenario.csv')\nprint(round(float(d[d['10-year Treasury yield']<=1.0]['Unemployment rate'].mean()),2))",
+ "abs_tol": 0.005
+}

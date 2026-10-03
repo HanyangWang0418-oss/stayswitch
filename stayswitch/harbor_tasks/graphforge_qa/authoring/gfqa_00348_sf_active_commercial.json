@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00348_sf_active_commercial",
+ "source_task_id": "graphseed_000348_graph_intent_4d57e5daf8215860",
+ "files": [
+  "sf_parcels_block3701.csv",
+  "sf_landuse_block3701.csv"
+ ],
+ "question": "Join sf_parcels_block3701.csv to sf_landuse_block3701.csv on mapblklot. Considering only parcels whose 'active' column in the parcels file is 'true', what is the total commercial floor area (sum of 'total_comm' in the land-use file, in square feet) divided by the total number of residential units (sum of 'resunits')? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 880.11,
+ "difficulty": "hard",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\np=list(csv.DictReader(open(D+'/sf_parcels_block3701.csv')))\nl={x['mapblklot']:x for x in csv.DictReader(open(D+'/sf_landuse_block3701.csv'))}\na=[l[x['mapblklot']] for x in p if x['active']=='true' and x['mapblklot'] in l]\nprint(round(sum(float(x['total_comm']) for x in a)/sum(float(x['resunits']) for x in a),2))\n",
+ "abs_tol": 0.005
+}

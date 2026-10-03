@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00791_two_part_share",
+ "source_task_id": "graphseed_000791_graph_intent_db2a62842e302e63",
+ "files": [
+  "caltrans_2020_adjusted_urban_area.csv"
+ ],
+ "question": "In caltrans_2020_adjusted_urban_area.csv, what percentage of the total Population (summed over all rows) is accounted for by urban areas whose UrbanAreas value is 2 and whose Area_sqm exceeds 50? Round to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nc=pd.read_csv(D+'/caltrans_2020_adjusted_urban_area.csv')\ns=c[(c.UrbanAreas==2)&(c.Area_sqm>50)].Population.sum()\nprint(round(100*s/c.Population.sum(),2))\n",
+ "answer": 90.19,
+ "abs_tol": 0.005
+}

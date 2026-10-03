@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02207_prosperity_loan_deposit",
+ "source_task_id": "graphseed_002207_graph_intent_4e7e6f8637ab4868",
+ "files": [
+  "prosperity_bank_recent_quarters.json"
+ ],
+ "question": "In prosperity_bank_recent_quarters.json (FDIC records under data[].data), compute the loans-to-deposits ratio LNLSNET/DEP in percent for each quarter and return the REPDTE (YYYYMMDD) of the quarter with the lowest ratio among the 12 records.",
+ "answer_type": "string",
+ "answer": "20251231",
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nd=[x['data'] for x in json.load(open(D+'/prosperity_bank_recent_quarters.json'))['data']]\nprint(min(d,key=lambda x:x['LNLSNET']/x['DEP'])['REPDTE'])\n",
+ "abs_tol": 0
+}

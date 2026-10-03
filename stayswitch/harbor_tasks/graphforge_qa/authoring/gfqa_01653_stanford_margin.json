@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_01653_stanford_margin",
+ "source_task_id": "graphseed_001653_graph_intent_1716169cd11187c3",
+ "files": [
+  "stanford_cost_report_2022.json",
+  "stanford_cost_report_2023.json"
+ ],
+ "question": "In stanford_cost_report_2022.json and stanford_cost_report_2023.json, compute each year's net income margin as 'Net Income' divided by ('Net Patient Revenue' + 'Total Other Income'), as a percentage. Report the 2023-report margin minus the 2022-report margin in percentage points, rounded to 2 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=lambda y:json.load(open(D+'/stanford_cost_report_%d.json'%y))\ng=lambda d:100*float(d['Net Income'])/(float(d['Net Patient Revenue'])+float(d['Total Other Income']))\nprint(round(g(f(2023))-g(f(2022)),2))\n",
+ "answer": 1.4,
+ "abs_tol": 0.005
+}

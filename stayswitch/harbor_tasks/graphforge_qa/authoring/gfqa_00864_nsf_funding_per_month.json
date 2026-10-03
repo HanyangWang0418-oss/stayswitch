@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00864_nsf_funding_per_month",
+ "source_task_id": "graphseed_000864_graph_intent_4a9b99e5394f5969",
+ "files": [
+  "nsf_award_1901630.json",
+  "nsf_award_1103235_confuser.json"
+ ],
+ "question": "Using nsf_award_1901630.json and nsf_award_1103235_confuser.json (NSF award records), compute for each award the estimatedTotalAmt divided by the award duration in whole months between startDate and expDate (both MM/DD/YYYY; months = 12*(year difference)+(month difference), ignoring the day). Report the ratio of the first award's monthly funding to the second's, rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 0.99,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\ndef f(n):\n    a=json.load(open(D+'/'+n))['response']['award'][0]\n    s=a['startDate'].split('/');e=a['expDate'].split('/')\n    m=12*(int(e[2])-int(s[2]))+int(e[0])-int(s[0])\n    return float(a['estimatedTotalAmt'])/m\nprint(round(f('nsf_award_1901630.json')/f('nsf_award_1103235_confuser.json'),2))\n",
+ "abs_tol": 0.005
+}

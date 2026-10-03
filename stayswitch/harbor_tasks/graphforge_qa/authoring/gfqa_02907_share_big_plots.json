@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02907_share_big_plots",
+ "source_task_id": "graphseed_002907_graph_intent_8119fe58f2ec4661",
+ "files": [
+  "fia_state_aboveground_carbon_estimates.csv"
+ ],
+ "question": "In fia_state_aboveground_carbon_estimates.csv, what percent of the all-state total ESTIMATE comes from states with PLOT_COUNT of at least 3000? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 62.27,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/fia_state_aboveground_carbon_estimates.csv')\nprint(round(float(100*d[d.PLOT_COUNT>=3000].ESTIMATE.sum()/d.ESTIMATE.sum()),2))",
+ "abs_tol": 0.005
+}

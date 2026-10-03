@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00766_bates_deep_formation",
+ "source_task_id": "graphseed_000766_graph_intent_fc3b8b98af2d92ae",
+ "files": [
+  "bates_field_tops.csv"
+ ],
+ "question": "In bates_field_tops.csv, consider only formations (FORMATION column) that have at least 4 records with a non-blank TOP_FT. Which of these formations has the greatest average TOP_FT (feet)? Give the FORMATION name exactly as it appears.",
+ "answer_type": "string",
+ "answer": "Simpson Group",
+ "difficulty": "easy",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\ng={}\nfor t in csv.DictReader(open(D+\"/bates_field_tops.csv\")):\n    if t[\"TOP_FT\"]: g.setdefault(t[\"FORMATION\"],[]).append(float(t[\"TOP_FT\"]))\ng={k:sum(v)/len(v) for k,v in g.items() if len(v)>=4}\nprint(max(g,key=g.get))"
+}

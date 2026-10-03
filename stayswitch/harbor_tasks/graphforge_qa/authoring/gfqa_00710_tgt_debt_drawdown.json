@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00710_tgt_debt_drawdown",
+ "source_task_id": "graphseed_000710_graph_intent_8c00359809a0796c",
+ "files": [
+  "tgt_longterm_debt.json"
+ ],
+ "question": "In tgt_longterm_debt.json, take the USD long-term debt observations, counting each distinct period 'end' date once (some are duplicated). Find the highest and lowest values observed and compute the percent change from the highest to the lowest ((low - high)/high x 100). Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": -36.28,
+ "difficulty": "easy",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nd=json.load(open(D+\"/tgt_longterm_debt.json\"))[\"units\"][\"USD\"]\nm={x[\"end\"]:x[\"val\"] for x in d}\nhi,lo=max(m.values()),min(m.values())\nprint(round((lo-hi)/hi*100,2))",
+ "abs_tol": 0.005
+}

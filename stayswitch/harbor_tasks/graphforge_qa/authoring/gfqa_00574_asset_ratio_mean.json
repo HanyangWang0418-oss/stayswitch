@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00574_asset_ratio_mean",
+ "source_task_id": "graphseed_000574_graph_intent_05b0a3b99f7e51f8",
+ "files": [
+  "ffiec_bofa_financials.json",
+  "ffiec_jpmorgan_capital_data.json"
+ ],
+ "question": "Using ffiec_jpmorgan_capital_data.json and ffiec_bofa_financials.json, for every REPDTE present in both files compute the ratio JPMorgan ASSET divided by Bank of America ASSET. What is the average of these ratios across the common quarters? Round to 3 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\ndef L(f):\n    return {r['data']['REPDTE']:r['data'] for r in json.load(open(D+'/'+f))['data']}\nb=L('ffiec_bofa_financials.json');j=L('ffiec_jpmorgan_capital_data.json')\nk=sorted(set(b)&set(j))\nprint(round(sum(j[x]['ASSET']/b[x]['ASSET'] for x in k)/len(k),3))\n",
+ "answer": 1.378,
+ "abs_tol": 0.0005
+}

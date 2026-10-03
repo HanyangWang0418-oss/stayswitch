@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02504_habitat_gap",
+ "source_task_id": "graphseed_002504_graph_intent_05e4a9841ed8ba98",
+ "files": [
+  "watershed_reach_integrity_scores.csv"
+ ],
+ "question": "In watershed_reach_integrity_scores.csv, among reach records with a non-blank Overall, Habitat and Contact Recreation score, how many have a Habitat score at least 20 points higher than their Contact Recreation score?",
+ "answer_type": "number",
+ "answer": 47,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/watershed_reach_integrity_scores.csv')\nd=d.dropna(subset=['Overall','Habitat','Contact Recreation'])\nprint(int(((d.Habitat-d['Contact Recreation'])>=20).sum()))",
+ "abs_tol": 0
+}

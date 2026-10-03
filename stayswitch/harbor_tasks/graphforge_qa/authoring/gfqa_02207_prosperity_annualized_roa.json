@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02207_prosperity_annualized_roa",
+ "source_task_id": "graphseed_002207_graph_intent_4e7e6f8637ab4868",
+ "files": [
+  "prosperity_bank_recent_quarters.json"
+ ],
+ "question": "Using prosperity_bank_recent_quarters.json (FDIC data for Prosperity Bank; records under data[].data with REPDTE, NETINC and ASSET in $ thousands), take the NETINC reported for REPDTE 20260331 (a first-quarter, year-to-date figure), multiply it by 4 to annualize, and divide by the average of ASSET at REPDTE 20260331 and ASSET at REPDTE 20250331. Express as a percentage rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 1.18,
+ "difficulty": "medium",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nd={x['data']['REPDTE']:x['data'] for x in json.load(open(D+'/prosperity_bank_recent_quarters.json'))['data']}\nprint(round(d['20260331']['NETINC']*4/((d['20260331']['ASSET']+d['20250331']['ASSET'])/2)*100,2))\n",
+ "abs_tol": 0.005
+}

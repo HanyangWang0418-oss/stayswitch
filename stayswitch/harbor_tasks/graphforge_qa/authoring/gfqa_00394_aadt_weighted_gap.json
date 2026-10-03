@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00394_aadt_weighted_gap",
+ "source_task_id": "graphseed_000394_graph_intent_b032add76d63ec4a",
+ "files": [
+  "fdot-aadt-us19-sr55-pasco-hernando.csv"
+ ],
+ "question": "In fdot-aadt-us19-sr55-pasco-hernando.csv, define each segment's length as END_POST minus BEGIN_POST. Compute the length-weighted mean AADT (sum of AADT x length divided by sum of length) separately for COUNTY Pasco and COUNTY Hernando. What is Pasco minus Hernando, rounded to the nearest whole number?",
+ "answer_type": "number",
+ "answer": 4247,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/fdot-aadt-us19-sr55-pasco-hernando.csv')\nd['L']=d.END_POST-d.BEGIN_POST\nw=lambda c:(d[d.COUNTY==c].AADT*d[d.COUNTY==c].L).sum()/d[d.COUNTY==c].L.sum()\nprint(round(float(w('Pasco')-w('Hernando'))))",
+ "abs_tol": 1
+}

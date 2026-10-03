@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02580_runoff_spread",
+ "source_task_id": "graphseed_002580_graph_intent_28583f50bf3281bf",
+ "files": [
+  "mtnhome_runoff_deepperc_2008-2020.csv"
+ ],
+ "question": "In mtnhome_runoff_deepperc_2008-2020.csv, restrict to station 'Glenns Ferry' and variable 'runoff'. For each year, add up tot_vol_af over all subregions (cgwa, gwma, rosa) to get an annual combined runoff volume in acre-feet. What is the difference between the largest and smallest annual combined volume? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 13152.07,
+ "difficulty": "medium",
+ "solve_py": "import os, csv, json\nD=os.environ.get(\"DATA_DIR\",\"/app/data\")\nr=list(csv.DictReader(open(D+\"/mtnhome_runoff_deepperc_2008-2020.csv\")))\nt={}\nfor x in r:\n    if x[\"station\"]==\"Glenns Ferry\" and x[\"variable\"]==\"runoff\":\n        t[x[\"year\"]]=t.get(x[\"year\"],0)+float(x[\"tot_vol_af\"])\nprint(round(max(t.values())-min(t.values()),2))",
+ "abs_tol": 0.01
+}

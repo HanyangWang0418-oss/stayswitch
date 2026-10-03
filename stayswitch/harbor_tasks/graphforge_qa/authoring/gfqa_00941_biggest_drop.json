@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00941_biggest_drop",
+ "source_task_id": "graphseed_000941_graph_intent_f4cf47f546b66785",
+ "files": [
+  "sequencing_costs_datahub.csv"
+ ],
+ "question": "In sequencing_costs_datahub.csv (rows in chronological order), compute for each row after the first the percentage change in 'Cost per Genome' relative to the immediately preceding row. Which Date (as written, YYYY-MM) shows the largest percentage decline (most negative change)?",
+ "answer_type": "string",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\ns=pd.read_csv(D+'/sequencing_costs_datahub.csv')\ns['ch']=s['Cost per Genome'].pct_change()\nprint(s.loc[s.ch.idxmin(),'Date'])\n",
+ "answer": "2015-07"
+}

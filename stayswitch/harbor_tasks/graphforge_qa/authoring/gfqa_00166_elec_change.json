@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00166_elec_change",
+ "source_task_id": "graphseed_000166_graph_intent_22a9edf20bafc6cd",
+ "files": [
+  "ghg_inventory_energy_emissions_table_3-1.csv"
+ ],
+ "question": "In ghg_inventory_energy_emissions_table_3-1.csv (MMT CO2 Eq.), under the CO2 block's Fossil Fuel Combustion breakdown, what is the percent change in Electricity Generation emissions from 2005 to 2021? Give the percent change rounded to 2 decimals (negative for a decline).",
+ "answer_type": "number",
+ "answer": -35.8,
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/ghg_inventory_energy_emissions_table_3-1.csv',header=None,dtype=str)\nd=d.iloc[:,1:]\nhdr=d.iloc[2].tolist()\nd.columns=hdr\nd=d.iloc[3:].reset_index(drop=True)\nd['Gas/Source']=d['Gas/Source'].astype(str)\nv=lambda i,y:float(str(d.loc[i,y]).replace(',',''))\nrow=lambda lab,start=0:int(d.index[(d['Gas/Source'].str.strip()==lab)&(d.index>=start)][0])\ni=row('Electricity Generation')\nprint(round((v(i,'2021')/v(i,'2005')-1)*100,2))",
+ "abs_tol": 0.005
+}

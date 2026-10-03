@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01149_tx_violation_rate",
+ "source_task_id": "graphseed_001149_graph_intent_b4ae7e89b988ed77",
+ "files": [
+  "texas_facility_136975_inspections.csv"
+ ],
+ "question": "In texas_facility_136975_inspections.csv, restrict to rows with activity_type 'INSPECTION' and an activity_date in calendar years 2022 through 2024 inclusive. What percentage of those inspections have violation_found = 'Yes'? Round to 1 decimal.",
+ "answer_type": "number",
+ "answer": 62.5,
+ "difficulty": "easy",
+ "solve_py": "import os,csv,json\nD=os.environ.get('DATA_DIR','/app/data')\nr=list(csv.DictReader(open(D+'/texas_facility_136975_inspections.csv')))\nr=[x for x in r if x['activity_type']=='INSPECTION' and '2022'<=x['activity_date'][:4]<='2024']\nprint(round(sum(x['violation_found']=='Yes' for x in r)/len(r)*100,1))\n",
+ "abs_tol": 0.05
+}

@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_02907_density_state",
+ "source_task_id": "graphseed_002907_graph_intent_8119fe58f2ec4661",
+ "files": [
+  "fia_state_aboveground_carbon_estimates.csv"
+ ],
+ "question": "In fia_state_aboveground_carbon_estimates.csv, among states with SE_PERCENT below 1.5, which STATE_NAME has the highest ESTIMATE per plot (ESTIMATE divided by PLOT_COUNT)?",
+ "answer_type": "string",
+ "answer": "Alabama",
+ "difficulty": "medium",
+ "solve_py": "import os,pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nd=pd.read_csv(D+'/fia_state_aboveground_carbon_estimates.csv')\nd=d[d.SE_PERCENT<1.5]\nprint(d.loc[(d.ESTIMATE/d.PLOT_COUNT).idxmax(),'STATE_NAME'])"
+}
