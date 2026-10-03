@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00757_citizens_highroe_assets",
+ "source_task_id": "graphseed_000757_graph_intent_c387d94ded011bb7",
+ "files": [
+  "citizens_bank_financials.csv",
+  "citizens_bank_full_financials.csv"
+ ],
+ "question": "Using citizens_bank_financials.csv, identify quarter-end dates (REPDTE) where ROE is above 15. Then, using citizens_bank_full_financials.csv matched on REPDTE, compute the average of its LIAB values for those dates, and subtract the average of EQ for those dates from citizens_bank_financials.csv. Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 56074.62,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=pd.read_csv(D+'/citizens_bank_financials.csv');g=pd.read_csv(D+'/citizens_bank_full_financials.csv')\nd=f[f.ROE>15].REPDTE\nprint(round(g[g.REPDTE.isin(d)].LIAB.mean()-f[f.REPDTE.isin(d)].EQ.mean(),2))\n",
+ "difficulty": "hard",
+ "abs_tol": 0.005
+}

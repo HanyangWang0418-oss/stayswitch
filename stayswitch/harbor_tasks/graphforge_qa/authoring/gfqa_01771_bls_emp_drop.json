@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_01771_bls_emp_drop",
+ "source_task_id": "graphseed_001771_graph_intent_298c4ce03584850a",
+ "files": [
+  "bls_employment_api_jul2026.json"
+ ],
+ "question": "In bls_employment_api_jul2026.json, take series CES0000000001 (total nonfarm employment, thousands). Ordering months chronologically, which month had the largest month-over-month decrease? Answer in the form YYYY-MM (e.g. 2025-03).",
+ "answer_type": "string",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nj=json.load(open(D+'/bls_employment_api_jul2026.json'))\ns=[x for x in j['Results']['series'] if x['seriesID']=='CES0000000001'][0]['data']\nv=sorted([(x['year']+'-'+x['period'][1:],float(x['value'])) for x in s])\ni=min(range(1,len(v)),key=lambda i:v[i][1]-v[i-1][1])\nprint(v[i][0])\n",
+ "answer": "2026-02"
+}

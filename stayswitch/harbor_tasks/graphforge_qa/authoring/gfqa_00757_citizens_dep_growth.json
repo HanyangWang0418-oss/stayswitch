@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00757_citizens_dep_growth",
+ "source_task_id": "graphseed_000757_graph_intent_c387d94ded011bb7",
+ "files": [
+  "citizens_bank_financials.csv"
+ ],
+ "question": "In citizens_bank_financials.csv, compute the year-over-year growth in total deposits (DEP) between REPDTE 20220930 and REPDTE 20230930 as a percentage, rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": -9.21,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=pd.read_csv(D+'/citizens_bank_financials.csv').set_index('REPDTE');print(round((f.loc[20230930,'DEP']/f.loc[20220930,'DEP']-1)*100,2))\n",
+ "difficulty": "easy",
+ "abs_tol": 0.005
+}

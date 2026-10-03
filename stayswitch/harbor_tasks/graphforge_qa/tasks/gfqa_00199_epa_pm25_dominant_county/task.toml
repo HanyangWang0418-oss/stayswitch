@@ -1,0 +1,20 @@
+version = "1.0"
+
+[metadata]
+author_name = "graphforge-derived"
+difficulty = "medium"
+category = "table-qa"
+tags = ["officeqa-style", "deterministic-verifier", "source:GraphForge-SFT-2169"]
+source_task_id = "graphseed_000199_graph_intent_f4ba62729f8bcc4e"
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 900.0
+
+[environment]
+build_timeout_sec = 300.0
+cpus = 1
+memory_mb = 2048
+storage_mb = 2048

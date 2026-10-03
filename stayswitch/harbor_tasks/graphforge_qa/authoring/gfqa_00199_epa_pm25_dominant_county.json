@@ -1,0 +1,12 @@
+{
+ "id": "gfqa_00199_epa_pm25_dominant_county",
+ "source_task_id": "graphseed_000199_graph_intent_f4ba62729f8bcc4e",
+ "files": [
+  "epa_aqi_by_county_2021_in_ky.csv"
+ ],
+ "question": "In epa_aqi_by_county_2021_in_ky.csv, among counties with at least 360 'Days with AQI', find the county (any state) with the highest ratio of 'Days PM2.5' to 'Days with AQI'. Give the answer as 'County, State' (e.g. 'Allen, Indiana').",
+ "answer_type": "string",
+ "answer": "Whitley, Indiana",
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/epa_aqi_by_county_2021_in_ky.csv');a=a[a['Days with AQI']>=360].copy();a['r']=a['Days PM2.5']/a['Days with AQI'];r=a.sort_values('r',ascending=False).iloc[0];print(r.County+', '+r.State)\n",
+ "difficulty": "medium"
+}

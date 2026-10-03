@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00199_epa_state_unhealthy_gap",
+ "source_task_id": "graphseed_000199_graph_intent_f4ba62729f8bcc4e",
+ "files": [
+  "epa_aqi_by_county_2021_in_ky.csv"
+ ],
+ "question": "In epa_aqi_by_county_2021_in_ky.csv, for each state compute the percentage of its counties (rows) whose Max AQI is at least 101 (i.e. reached Unhealthy for Sensitive Groups or worse). What is the absolute difference in percentage points between the two states, rounded to 2 decimals?",
+ "answer_type": "number",
+ "answer": 13.64,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/epa_aqi_by_county_2021_in_ky.csv');p=a.groupby('State')['Max AQI'].apply(lambda s:(s>=101).mean()*100);print(round(abs(p.max()-p.min()),2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}

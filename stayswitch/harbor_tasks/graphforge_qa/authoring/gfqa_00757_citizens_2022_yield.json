@@ -1,0 +1,14 @@
+{
+ "id": "gfqa_00757_citizens_2022_yield",
+ "source_task_id": "graphseed_000757_graph_intent_c387d94ded011bb7",
+ "files": [
+  "citizens_bank_financials.csv",
+  "citizens_bank_full_financials.csv"
+ ],
+ "question": "Citizens Bank quarterly call-report data: citizens_bank_full_financials.csv reports INTINC (year-to-date interest income) and citizens_bank_financials.csv reports ASSET at each REPDTE. Take INTINC at REPDTE 20221231 (the full-year 2022 figure) and divide it by the simple average of ASSET at the four quarter-ends 20220331, 20220630, 20220930 and 20221231. Express as a percentage rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 3.23,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nf=pd.read_csv(D+'/citizens_bank_financials.csv');g=pd.read_csv(D+'/citizens_bank_full_financials.csv')\ni=g[g.REPDTE==20221231].INTINC.iloc[0];a=f[f.REPDTE.isin([20220331,20220630,20220930,20221231])].ASSET.mean();print(round(i/a*100,2))\n",
+ "difficulty": "hard",
+ "abs_tol": 0.005
+}

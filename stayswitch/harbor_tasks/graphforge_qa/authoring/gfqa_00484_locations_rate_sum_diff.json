@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00484_locations_rate_sum_diff",
+ "source_task_id": "graphseed_000484_graph_intent_8820f570f67cb9fe",
+ "files": [
+  "locations.csv"
+ ],
+ "question": "In locations.csv, sum count_rate3 across all state-level rows (all rows except the national row with abbreviation US). By how much does this sum differ from the count_rate3 value reported in the US row (state sum minus US value)? Report an integer.",
+ "answer_type": "number",
+ "answer": 93.0,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/locations.csv',keep_default_na=False);u=a[a.abbreviation=='US'].count_rate3.iloc[0];print(int(a[a.abbreviation!='US'].count_rate3.sum()-u))\n",
+ "difficulty": "medium",
+ "abs_tol": 0
+}

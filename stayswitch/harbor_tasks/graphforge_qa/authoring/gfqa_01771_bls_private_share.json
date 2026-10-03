@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01771_bls_private_share",
+ "source_task_id": "graphseed_001771_graph_intent_298c4ce03584850a",
+ "files": [
+  "bls_employment_api_jul2026.json"
+ ],
+ "question": "In bls_employment_api_jul2026.json, for each month of 2026 (January through July) compute the private-sector share of total nonfarm employment as CES0500000001 divided by CES0000000001, in percent. Report the average of those seven monthly shares, rounded to 3 decimals.",
+ "answer_type": "number",
+ "difficulty": "medium",
+ "solve_py": "import os,json\nimport pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\nj=json.load(open(D+'/bls_employment_api_jul2026.json'))\nS={x['seriesID']:{(d['year'],d['period']):float(d['value']) for d in x['data']} for x in j['Results']['series'] if x['seriesID'].startswith('CES')}\nk=[('2026','M0%d'%i) for i in range(1,8)]\nprint(round(sum(100*S['CES0500000001'][m]/S['CES0000000001'][m] for m in k)/7,3))\n",
+ "answer": 85.308,
+ "abs_tol": 0.0005
+}

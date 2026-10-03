@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00484_locations_top5_pop_share",
+ "source_task_id": "graphseed_000484_graph_intent_8820f570f67cb9fe",
+ "files": [
+  "locations.csv"
+ ],
+ "question": "In locations.csv, excluding the US row, find the five rows with the largest population. What share of the US row's population do they represent together? Express as a percentage rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 37.35,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/locations.csv',keep_default_na=False);u=a[a.abbreviation=='US'].population.iloc[0];s=a[a.abbreviation!='US'].population.nlargest(5).sum();print(round(s/u*100,2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}
