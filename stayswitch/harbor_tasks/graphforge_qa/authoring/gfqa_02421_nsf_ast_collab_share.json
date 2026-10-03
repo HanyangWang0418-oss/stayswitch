@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_02421_nsf_ast_collab_share",
+ "source_task_id": "graphseed_002421_graph_intent_8a058d6a198edb63",
+ "files": [
+  "nsf_ast_awards_summary.csv"
+ ],
+ "question": "In nsf_ast_awards_summary.csv, what percentage of the total Amount is accounted for by awards whose Title begins with 'Collaborative Research'? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 51.29,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/nsf_ast_awards_summary.csv');print(round(a[a.Title.str.startswith('Collaborative Research')].Amount.sum()/a.Amount.sum()*100,2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}

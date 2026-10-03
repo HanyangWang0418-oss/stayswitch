@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_03043_harlandale_df_students",
+ "source_task_id": "graphseed_003043_graph_intent_628078e0fcee95ad",
+ "files": [
+  "harlandale_enrollment_2025.csv"
+ ],
+ "question": "In harlandale_enrollment_2025.csv, among campus rows (with a Campus Number) what percentage of total campus enrollment ('Number of Students') is at campuses whose Overall Rating is D or F? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 58.21,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/harlandale_enrollment_2025.csv');a=a[a['Campus Number'].notna()];print(round(a[a['Overall Rating'].isin(['D','F'])]['Number of Students'].sum()/a['Number of Students'].sum()*100,2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00743_fed_sa_unemp_gdp_quarters",
+ "source_task_id": "graphseed_000743_graph_intent_109b92138ae471a4",
+ "files": [
+  "2025-Table_3A_Supervisory_Severely_Adverse_Domestic.csv"
+ ],
+ "question": "In 2025-Table_3A_Supervisory_Severely_Adverse_Domestic.csv, find the quarter with the highest Unemployment rate; if tied, the earliest. Report the cumulative sum of Real GDP growth from the first row through that quarter inclusive (sum of the quarterly figures), rounded to 1 decimal.",
+ "answer_type": "number",
+ "answer": -29.8,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/2025-Table_3A_Supervisory_Severely_Adverse_Domestic.csv').reset_index(drop=True);i=a['Unemployment rate'].idxmax();print(round(a.loc[:i,'Real GDP growth'].sum(),1))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.05
+}

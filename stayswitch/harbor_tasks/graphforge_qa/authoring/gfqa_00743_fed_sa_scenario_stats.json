@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_00743_fed_sa_scenario_stats",
+ "source_task_id": "graphseed_000743_graph_intent_109b92138ae471a4",
+ "files": [
+  "2025-Table_3A_Supervisory_Severely_Adverse_Domestic.csv"
+ ],
+ "question": "In 2025-Table_3A_Supervisory_Severely_Adverse_Domestic.csv, consider the quarters in calendar year 2026. What is the average 10-year Treasury yield over those quarters minus the average 3-month Treasury rate over the same quarters, in percentage points, rounded to 2 decimals?",
+ "answer_type": "number",
+ "answer": 1.17,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/2025-Table_3A_Supervisory_Severely_Adverse_Domestic.csv');a=a[a.Date.str.startswith('2026')];print(round(a['10-year Treasury yield'].mean()-a['3-month Treasury rate'].mean(),2))\n",
+ "difficulty": "easy",
+ "abs_tol": 0.005
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_01012_cooke_aadt_city_gap",
+ "source_task_id": "graphseed_001012_graph_intent_a0d63fc13200f00e",
+ "files": [
+  "cooke_county_grade_crossing_aadt.csv"
+ ],
+ "question": "In cooke_county_grade_crossing_aadt.csv, ignore crossings with a missing aadt. For cityname GAINESVILLE and for all other cities combined, compute the mean aadt (average annual daily traffic). What is the Gainesville mean minus the other-cities mean? Round to 2 decimals.",
+ "answer_type": "number",
+ "answer": 2469.25,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/cooke_county_grade_crossing_aadt.csv').dropna(subset=['aadt']);g=a[a.cityname=='GAINESVILLE'].aadt.mean();o=a[a.cityname!='GAINESVILLE'].aadt.mean();print(round(g-o,2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}

@@ -1,0 +1,13 @@
+{
+ "id": "gfqa_03043_harlandale_elem_weighted_econ",
+ "source_task_id": "graphseed_003043_graph_intent_628078e0fcee95ad",
+ "files": [
+  "harlandale_enrollment_2025.csv"
+ ],
+ "question": "In harlandale_enrollment_2025.csv, use only campus rows (those with a Campus Number; exclude the district summary row) whose School Type is Elementary. Compute the enrollment-weighted average of '% Economically Disadvantaged', weighting by 'Number of Students', and express it as a percentage rounded to 2 decimals.",
+ "answer_type": "number",
+ "answer": 89.83,
+ "solve_py": "import os, pandas as pd\nD=os.environ.get('DATA_DIR','/app/data')\na=pd.read_csv(D+'/harlandale_enrollment_2025.csv');a=a[a['Campus Number'].notna()&(a['School Type']=='Elementary')];print(round((a['% Economically Disadvantaged']*a['Number of Students']).sum()/a['Number of Students'].sum()*100,2))\n",
+ "difficulty": "medium",
+ "abs_tol": 0.005
+}
